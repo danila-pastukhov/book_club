@@ -1,0 +1,35 @@
+import { BASE_URL } from "@/api"
+import pic from "../images/pic.jpg"
+import { FormatDate } from "@/services/formatDate"
+import { Link } from "react-router-dom"
+
+const BookWriter = ({book}) => {
+  return (
+    <Link to={`/profile/${book.author.username}`}>
+    <div className="flex items-center gap=4 ">
+
+      
+      <span className="flex items-center gap-2">
+        <div className="w-[40px] h-[40px] rounded-full overflow-hidden">
+          <img
+            src={`${BASE_URL}${book.author.profile_picture}`}
+            className="c rounded-full w-full h-full object-cover"
+          />
+        </div>
+
+        <small className="text-[#696A75] text-[14px]">
+          {book.author.first_name} {book.author.last_name}
+        </small>
+      </span>
+
+      <small className="text-[#696A75] text-[14px] ml-3">
+        {FormatDate(book.published_date)}
+      </small>
+
+
+    </div>
+    </Link>
+  )
+}
+
+export default BookWriter
