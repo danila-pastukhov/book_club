@@ -1,17 +1,42 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Book, ReadingGroup
 from django.utils.translation import gettext_lazy as _
+
+from .models import Book, CustomUser, ReadingGroup
 
 # Register your models here.
 
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ("username", "first_name", "last_name", "email", "job_title", "profile_picture", "profile_picture_url")
-    
+    list_display = (
+        "username",
+        "first_name",
+        "last_name",
+        "email",
+        "job_title",
+        "profile_picture",
+        "profile_picture_url",
+    )
+
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        (_("Personal info"), {"fields": ("first_name", "last_name", "email", 'bio', 'profile_picture', 'job_title', 'facebook', 'twitter', 'instagram', 'linkedin')}),
+        (
+            _("Personal info"),
+            {
+                "fields": (
+                    "first_name",
+                    "last_name",
+                    "email",
+                    "bio",
+                    "profile_picture",
+                    "job_title",
+                    "facebook",
+                    "twitter",
+                    "instagram",
+                    "linkedin",
+                )
+            },
+        ),
         (
             _("Permissions"),
             {
@@ -28,9 +53,20 @@ class CustomUserAdmin(UserAdmin):
     )
 
     add_fieldsets = UserAdmin.add_fieldsets + (
-        (None, {
-            'fields': ('bio', 'profile_picture', 'job_title', 'facebook', 'twitter', 'instagram', 'linkedin')
-        }),
+        (
+            None,
+            {
+                "fields": (
+                    "bio",
+                    "profile_picture",
+                    "job_title",
+                    "facebook",
+                    "twitter",
+                    "instagram",
+                    "linkedin",
+                )
+            },
+        ),
     )
 
 
@@ -38,12 +74,14 @@ admin.site.register(CustomUser, CustomUserAdmin)
 
 
 class BookAdmin(admin.ModelAdmin):
-    list_display = ("title", "is_draft", "category", "created_at")
+    list_display = ("title", "is_draft", "category", "created_at", "description")
+
 
 admin.site.register(Book, BookAdmin)
 
 
 class ReadingGroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'created_at')
+    list_display = ("name", "description", "created_at")
+
 
 admin.site.register(ReadingGroup, ReadingGroupAdmin)

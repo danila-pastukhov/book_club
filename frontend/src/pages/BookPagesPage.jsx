@@ -39,19 +39,6 @@ const BookPagesPage = ({ username, isAuthenticated }) => {
   console.log(book);
 
 
-
-
-//   function handleDeleteReadingGroup(){
-//     const popUp = window.confirm("Are you sure you want to delete this group? Haha group not post")  // REM
-//     if(!popUp){
-//       return;
-//     }
-
-//     deleteMutation.mutate(reading_groupID)
-
-
-
-//   }
   const [currentPage, setCurrentPage] = useState(1);
   const wordsPerPage = 220; // Define how much text per page
 
@@ -60,27 +47,74 @@ const BookPagesPage = ({ username, isAuthenticated }) => {
   }
 
 
-
-
-
-  // Logic to split text into pages
-  const words = book.content.split(' ');
-  const totalPages = Math.ceil(words.length / wordsPerPage);
+  // const words = book.content.split(' ');
+  // const totalPages = Math.ceil(words.length / wordsPerPage);
   
-  const currentText = words
-    .slice((currentPage - 1) * wordsPerPage, currentPage * wordsPerPage)
-    .join(' ');
+  // const currentText = words
+  //   .slice((currentPage - 1) * wordsPerPage, currentPage * wordsPerPage)
+  //   .join(' ');
+  
+  // things like tabs
+
+  const symbolsPerLine = 75; 
+  const linesPerPage = 18; 
+  const content = book.content;
+  const lines = [];
+  const words = content.split(' ');
+
+  let currentLine = '';
+
+  words.forEach(word => {
+    if (currentLine.length + word.length + 1 > symbolsPerLine) {
+      lines.push(currentLine);
+      currentLine = '';
+    }
+    currentLine += (currentLine.length ? ' ' : '') + word;
+  });
+
+
+  if (currentLine) {  
+    lines.push(currentLine);
+  }
+
+  const contentLines = content.split('\n');
+  const finalLines = [];
+
+  contentLines.forEach((contentLine) => {
+    if (contentLine.trim()) {
+      const lineWords = contentLine.split(' ');
+      let tempLine = '';
+      lineWords.forEach(word => {
+        if (tempLine.length + word.length + 1 > symbolsPerLine) {
+          finalLines.push(tempLine);
+          tempLine = '';
+        }
+        tempLine += (tempLine.length ? ' ' : '') + word;
+      });
+      if (tempLine) finalLines.push(tempLine);
+    } else {
+
+      finalLines.push('');
+    }
+  });
+
+  const totalPages = Math.ceil(finalLines.length / linesPerPage);
+
+  const currentText = finalLines
+    .slice((currentPage - 1) * linesPerPage, currentPage * linesPerPage)
+    .join('\n');
 
   return (
     <>
-      <div className="padding-dx max-container py-6">
-        <nav className="max-container padding-x py-6 flex justify-between items-center  gap-6 sticky top-0 z-10 bg-[#EEEEEE] dark:bg-[#141624]">
+      {/* Fix rounding */}
+      <div className="padding-dx max-container py-6">  
+        <nav className="rounded max-container padding-x py-6 flex justify-between items-center gap-6 sticky top-0 z-10 bg-[#F6F6F7] dark:bg-[#141624]">
             <Link to="/" className="text-[#141624] text-2xl dark:text-[#FFFFFF]">
               Home
             </Link>
-            <h2 className="text-[#141624] text-2xl dark:text-[#FFFFFF]">
+            <Link to={`/books/${slug}`} className="text-[#141624] text-2xl dark:text-[#FFFFFF]">
               {book.title}
-            </h2>
+            </Link>
             <Link to="/" className="text-[#141624] text-2xl dark:text-[#FFFFFF]">
               Chapters
             </Link>

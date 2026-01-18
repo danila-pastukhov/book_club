@@ -27,9 +27,9 @@ export async function getBookPage(slug) { // REM
   }
 }
 
-export async function getReadingGroups(slug) {  // REM
+export async function getReadingGroups(page) {  // REM
   try {
-    const response = await api.get(`group_list?=page${page}`);
+    const response = await api.get(`group_list?page=${page}`);
     return response.data;
   } catch (err) {
     throw new Error(err.message);

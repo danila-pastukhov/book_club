@@ -13,6 +13,7 @@ import Modal from "@/ui_components/Modal";
 import CreatePostPage from "./CreatePostPage";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import { Link } from "react-router-dom";
 
 const DetailPage = ({ username, isAuthenticated }) => {
   const { slug } = useParams();
@@ -39,7 +40,7 @@ const DetailPage = ({ username, isAuthenticated }) => {
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteBook(id),
     onSuccess: () => {
-      toast.success("Your post has been deleted successfully!")
+      toast.success("Your book has been deleted successfully!")
       navigate("/")
     },
 
@@ -50,7 +51,7 @@ const DetailPage = ({ username, isAuthenticated }) => {
   })
 
   function handleDeleteBook(){
-    const popUp = window.confirm("Are you sure you want to delete this post?")
+    const popUp = window.confirm("Are you sure you want to delete this book?")
     if(!popUp){
       return;
     }
@@ -77,6 +78,10 @@ const DetailPage = ({ username, isAuthenticated }) => {
             {book.title}
           </h2>
 
+          <Link to={`/books/${slug}/page`} className="bg-[#4B6BFB] text-white py-3 px-6 rounded-md flex gap-2">
+            Read book
+          </Link>
+
           {isAuthenticated && username === book.author.username && (
             <span className="flex justify-between items-center gap-2">
               <HiPencilAlt onClick={toggleModal} className="dark:text-white text-3xl cursor-pointer" />
@@ -95,7 +100,8 @@ const DetailPage = ({ username, isAuthenticated }) => {
           />
         </div>
         <p className="text-[16px] leading-[2rem] text-justify text-[#3B3C4A] dark:text-[#BABABF]">
-          {book.content}
+          {book.description || "This book doesn't have a description."} 
+          {/* Logical or */}
         </p>
       </div>
 

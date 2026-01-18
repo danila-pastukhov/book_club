@@ -16,7 +16,10 @@ const HomePage = () => {
   });
 
   const books = data?.results || [];
+  console.log(books);
   const numOfPages = Math.ceil(data?.count / numOfBooksPerPage);
+  console.log(numOfPages);
+  console.log(page);
 
   function handleSetPage(val) {
     setPage(val);

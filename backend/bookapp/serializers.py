@@ -75,6 +75,7 @@ class BookSerializer(serializers.ModelSerializer):
             "slug",
             "author",
             "category",
+            "description",
             "content",
             "featured_image",
             "published_date",
@@ -92,10 +93,20 @@ class BookSerializer(serializers.ModelSerializer):
 
 class ReadingGroupSerializer(serializers.ModelSerializer):  # REM
     creator = SimpleAuthorSerializer(read_only=True)
+    user = SimpleAuthorSerializer(many=True, read_only=True)
 
     class Meta:
         model = ReadingGroup
-        fields = ["id", "name", "slug", "creator", "created_at"]
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "creator",
+            "created_at",
+            "featured_image",
+            "user",
+            "description",
+        ]
 
 
 class UserInfoSerializer(serializers.ModelSerializer):

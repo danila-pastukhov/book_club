@@ -62,12 +62,23 @@ const NavBar = ({
             </>
           )}
 
-          <li className="font-semibold">
+          <li>
+            {/* className="font-semibold" */}
+            <NavLink
+              to="/groups"
+              className={({ isActive }) => (isActive ? "active" : "")}
+            >
+              Groups
+            </NavLink>
+          </li>
+
+          <li>
+            {/* className="font-semibold" */}
             <NavLink
               to="/create"
               className={({ isActive }) => (isActive ? "active" : "")}
             >
-              Create Post
+              Create book
             </NavLink>
           </li>
         </ul>

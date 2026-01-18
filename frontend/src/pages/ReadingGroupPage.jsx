@@ -1,7 +1,7 @@
 // THIS IS TRYING TO DETAIL THE SHOWING OF GROUPS (.../groups/group-name)
 
 import Badge from "@/ui_components/Badge";
-import BookWriter from "@/ui_components/BookWriter";
+import GroupCreator from "@/ui_components/GroupCreator";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { deleteReadingGroup, getReadingGroup } from "@/services/apiBook";
@@ -69,38 +69,37 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
 
   return (
     <>
-      <div className="padding-dx max-container py-9">
-        <Badge reading_group={reading_group} />
-
+      <div className="padding-dx max-container py-9 gap-6 flex flex-col">
         <div className="flex justify-between items-center gap-4">
-          <h2 className="py-6 leading-normal text-2xl md:text-3xl text-[#181A2A] tracking-wide font-semibold dark:text-[#FFFFFF]">
-            {reading_group.name}
-          </h2>
-
-          {/* {isAuthenticated && username === reading_group.creator.username && (
+          <span className="flex items-center gap-6">
+            <div className="w-[60px] h-[60px] rounded-full overflow-hidden">
+              <img
+                className="c rounded-full w-full h-full object-cover"
+                src={`${BASE_URL}${reading_group.featured_image}`}
+              />
+            </div>
+            <h1 className="py-6 leading-normal text-2xl md:text-3xl text-[#181A2A] tracking-wide font-semibold dark:text-[#FFFFFF]">
+              {reading_group.name}
+            </h1>
+          </span>
+          {isAuthenticated && username === reading_group.creator.username && (
             <span className="flex justify-between items-center gap-2">
               <HiPencilAlt onClick={toggleModal} className="dark:text-white text-3xl cursor-pointer" />
 
               <MdDelete onClick={handleDeleteReadingGroup} className="dark:text-white text-3xl cursor-pointer" />
             </span>
-          )} */}
+          )}
         </div>
 
-        {/* <BookWriter book={book} />  THESE BOOKS I HATE THEM
-
-        <div className="w-full h-[350px] my-9 overflow-hidden rounded-sm">
-          <img
-            className="w-full h-full object-cover rounded-sm"
-            src={`${BASE_URL}${book.featured_image}`}
-          />
-        </div>
-        <p className="text-[16px] leading-[2rem] text-justify text-[#3B3C4A] dark:text-[#BABABF]">
-          {book.content}
-        </p> */}
+        <GroupCreator reading_group={reading_group} />
+        
+        <p className="text-[18px] leading-[2rem] text-justify text-[#3B3C4A] dark:text-[#BABABF]">
+          {reading_group.description || "This group doesn't have a description."}
+        </p>
       </div>
 
      {showModal && <Modal toggleModal={toggleModal}> 
-        <CreatePostPage book={book} />
+        <CreatePostPage reading_group={reading_group} />
       </Modal>}
     </>
   );

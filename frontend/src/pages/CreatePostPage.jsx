@@ -34,8 +34,8 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
     mutationFn: ({ data, id }) => updateBook(data, id),
     onSuccess: () => {
       navigate("/");
-      toast.success("Your post has been updated successfully!");
-      console.log("Your post has been updated successfully!");
+      toast.success("Your book has been updated successfully!");
+      console.log("Your book has been updated successfully!");
     },
 
     onError: (err) => {
@@ -47,7 +47,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
   const mutation = useMutation({
     mutationFn: (data) => createBook(data),
     onSuccess: () => {
-      toast.success("New post added successfully");
+      toast.success("New book added successfully");
       queryClient.invalidateQueries({ queryKey: ["books"] });
       navigate("/");
     },
@@ -56,6 +56,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
   function onSubmit(data) {
     const formData = new FormData();
     formData.append("title", data.title);
+    formData.append("description", data.description);
     formData.append("content", data.content);
     formData.append("category", data.category);
 
@@ -96,7 +97,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
 
       <div>
         <Label htmlFor="title" className="dark:text-[97989F]">
-          Title
+          Title *
         </Label>
         <Input
           type="text"
@@ -116,10 +117,25 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
       </div>
 
       <div>
-        <Label htmlFor="content">Content</Label>
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          placeholder="Give a brief description of your book"
+          {...register("description", {
+            required: "Book's content is required"
+          })}
+          className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[180px]  w-[400px] text-justify max-sm:w-[300px] max-sm:text-[14px]"
+        />
+        {errors?.description?.message && (
+          <InputError error={errors.description.message} />
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="content">Content *</Label>
         <Textarea
           id="content"
-          placeholder="Write your book post"
+          placeholder="Insert your book"
           {...register("content", {
             required: "Book's content is required",
             minLength: {
@@ -135,7 +151,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
       </div>
 
       <div className="w-full">
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="category">Category *</Label>
 
         <Select
           {...register("category", { required: "Book's category is required" })}
@@ -166,7 +182,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
       </div>
 
       <div className="w-full">
-        <Label htmlFor="featured_image">Featured Image</Label>
+        <Label htmlFor="featured_image">Featured Image *</Label>
         <Input
           type="file"
           id="picture"
@@ -190,10 +206,10 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
             {updateMutation.isPending ? (
               <>
                 {" "}
-                <SmallSpinner /> <SmallSpinnerText text="Updating post..." />{" "}
+                <SmallSpinner /> <SmallSpinnerText text="Updating book..." />{" "}
               </>
             ) : (
-              <SmallSpinnerText text="Update post" />
+              <SmallSpinnerText text="Update book" />
             )}
           </button>
         ) : (
@@ -204,10 +220,10 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
             {mutation.isPending ? (
               <>
                 {" "}
-                <SmallSpinner /> <SmallSpinnerText text="Creating post..." />{" "}
+                <SmallSpinner /> <SmallSpinnerText text="Creating book..." />{" "}
               </>
             ) : (
-              <SmallSpinnerText text="Create post" />
+              <SmallSpinnerText text="Create book" />
             )}
           </button>
         )}

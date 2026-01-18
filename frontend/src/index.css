@@ -14,7 +14,9 @@ button[disabled]{
   @apply transition-all duration-500 font-[Ubuntu]
 }
 
-
+.rounded {
+  border-radius: 1rem;
+}
 
 
 @layer components {
