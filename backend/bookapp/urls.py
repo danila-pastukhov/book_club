@@ -1,6 +1,6 @@
 from django.urls import path
-from . import views 
 
+from . import views
 
 urlpatterns = [
     path("register_user/", views.register_user, name="register_user"),
@@ -13,5 +13,8 @@ urlpatterns = [
     path("get_username", views.get_username, name="get_username"),
     path("get_userinfo/<str:username>", views.get_userinfo, name="get_userinfo"),
     path("get_user/<str:email>", views.get_user, name="get_user"),
-    path("groups/<slug:slug>", views.get_reading_group, name="get_reading_group")  # REM
+    path(
+        "groups/<slug:slug>", views.get_reading_group, name="get_reading_group"
+    ),  # REM
+    path("books/<slug:slug>/page", views.get_book, name="get_book_page"),
 ]

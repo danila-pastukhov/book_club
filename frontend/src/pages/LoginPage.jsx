@@ -45,7 +45,7 @@ const LoginPage = ({setIsAuthenticated, setUsername}) => {
     dark:text-white dark:bg-[#141624]"
     >
       <div className="flex flex-col gap-2 justify-center items-center mb-2">
-        <h3 className="font-semibold text-2xl">Signin Form</h3>
+        <h3 className="font-semibold text-2xl">Sign in Form</h3>
         <p>Welcome back! Log in to continue.</p>
       </div>
 

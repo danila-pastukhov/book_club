@@ -18,7 +18,16 @@ export async function getBook(slug) {
   }
 }
 
-export async function getReadingGroups(slug) {
+export async function getBookPage(slug) { // REM
+  try {
+    const response = await api.get(`books/${slug}/page`);
+    return response.data;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+}
+
+export async function getReadingGroups(slug) {  // REM
   try {
     const response = await api.get(`group_list?=page${page}`);
     return response.data;

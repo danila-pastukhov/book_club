@@ -4,10 +4,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Change to only specific buttons */
+button:disabled,
+button[disabled]{
+  color: #c7c7c7;
+}
 
-
-
-*{
+*:not(button:disabled, button[disabled], button:enabled, button[enabled]) {
   @apply transition-all duration-500 font-[Ubuntu]
 }
 
@@ -15,10 +18,28 @@
 
 
 @layer components {
+
   .max-container {
     width:100%;
     max-width: 1440px;
     margin: 0 auto;
+  }
+
+  .column-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lower-buttons-container {
+    position: fixed;
+    bottom: 50px;
+    left: 250px;
+    right: 250px;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    align-items: center;
   }
 }
 

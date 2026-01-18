@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./ui_components/AppLayout";
+import AppLayout2 from "./ui_components/AppLayout2";
 import HomePage from "./pages/HomePage";
 import DetailPage from "./pages/DetailPage";
 import ReadingGroupPage from "./pages/ReadingGroupPage";
@@ -8,6 +9,7 @@ import CreatePostPage from "./pages/CreatePostPage";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./ui_components/ProtectedRoute";
 import ProfilePage from "./pages/ProfilePage";
+import BookPagesPage from "./pages/BookPagesPage";
 import { useEffect, useState } from "react";
 import { getUsername } from "./services/apiBook";
 import { useQuery } from "@tanstack/react-query";
@@ -69,6 +71,19 @@ const App = () => {
               />
             }
           />
+        </Route>
+        <Route
+          path="/books/:slug/page"
+          // element={
+          //   <AppLayout2
+          //     isAuthenticated={isAuthenticated}
+          //     username={username}
+          //     setUsername={setUsername}
+          //     setIsAuthenticated={setIsAuthenticated}
+          //   />
+          // }
+        >
+          <Route index element={<BookPagesPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

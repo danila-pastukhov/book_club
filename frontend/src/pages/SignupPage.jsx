@@ -37,7 +37,7 @@ const SignupPage = ({ userInfo, updateForm, toggleModal }) => {
   const mutation = useMutation({
     mutationFn: (data) => registerUser(data),
     onSuccess: () => {
-      toast.success("You have successfully created an account!!!");
+      toast.success("You have successfully created an account!");
       reset();
     },
 
