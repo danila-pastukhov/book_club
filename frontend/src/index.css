@@ -18,6 +18,12 @@ button[disabled]{
   border-radius: 1rem;
 }
 
+.break-cancel {
+  white-space: pre-wrap;
+  word-break: break-word;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
 
 @layer components {
 
