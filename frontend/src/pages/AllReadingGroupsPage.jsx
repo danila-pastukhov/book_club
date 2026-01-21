@@ -12,7 +12,7 @@ const AllReadingGroupsPage = () => {
 
   const { isPending, isError, error, data } = useQuery({
     queryKey: ["reading_groups", page],
-    queryFn: () => getReadingGroups(page),
+    queryFn: () => getReadingGroups(page, numOfGroupsPerPage),
     placeholderData: keepPreviousData,
   });
 

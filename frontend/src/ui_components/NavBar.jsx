@@ -75,7 +75,17 @@ const NavBar = ({
           <li>
             {/* className="font-semibold" */}
             <NavLink
-              to="/create"
+              to="/books"
+              className={({ isActive }) => (isActive ? "active" : "")}
+            >
+              Books
+            </NavLink>
+          </li>
+
+          <li>
+            {/* className="font-semibold" */}
+            <NavLink
+              to="/create_book"
               className={({ isActive }) => (isActive ? "active" : "")}
             >
               Create book

@@ -11,7 +11,7 @@ const HomePage = () => {
 
   const { isPending, isError, error, data } = useQuery({
     queryKey: ["books", page],
-    queryFn: () => getBooks(page),
+    queryFn: () => getBooks(page, numOfBooksPerPage),
     placeholderData: keepPreviousData,
   });
 
@@ -36,14 +36,20 @@ const HomePage = () => {
   return (
     <>
       <Header />
-      <BookContainer isPending={isPending} books={books} />
-      <PagePagination
-        increasePageValue={increasePageValue}
-        decreasePageValue={decreasePageValue}
-        page={page}
-        numOfPages={numOfPages}
-        handleSetPage={handleSetPage}
-      />
+      <section className="py-6 max-container">
+          <h2 className="font-semibold text-xl mb-6 dark:text-white text-center">
+            Latest Books
+          </h2>
+          <BookContainer isPending={isPending} books={books} />
+          <PagePagination
+            increasePageValue={increasePageValue}
+            decreasePageValue={decreasePageValue}
+            page={page}
+            numOfPages={numOfPages}
+            handleSetPage={handleSetPage}
+          />
+          
+      </section>
     </>
   );
 };

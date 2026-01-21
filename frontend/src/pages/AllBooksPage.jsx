@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { getReadingGroups } from "@/services/apiBook";
-import ReadingGroupContainer from "@/ui_components/ReadingGroupContainer";
+import { getBooks } from "@/services/apiBook";
+import BookContainer from "@/ui_components/BookContainer";
 import PagePagination from "../ui_components/PagePagination";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -12,7 +12,7 @@ const AllBooksPage = () => {
 
   const { isPending, isError, error, data } = useQuery({
     queryKey: ["books", page],
-    queryFn: () => getReadingGroups(page),
+    queryFn: () => getBooks(page, numOfBooksPerPage),
     placeholderData: keepPreviousData,
   });
 
@@ -49,7 +49,7 @@ const AllBooksPage = () => {
             Create book
           </Link>
         </div>
-      <ReadingGroupContainer isPending={isPending} reading_groups={books} />
+      <BookContainer isPending={isPending} books={books} />
       <PagePagination
         increasePageValue={increasePageValue}
         decreasePageValue={decreasePageValue}

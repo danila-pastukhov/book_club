@@ -24,19 +24,16 @@ from .serializers import (
 # )
 
 
-class BookListPagination(PageNumberPagination):
-    page_size = 3
-
-
-class ReadingGroupListPagination(PageNumberPagination):
-    page_size = 9
+class AnyListPagination(PageNumberPagination):
+    def __init__(self, amount):
+        self.page_size = amount
 
 
 # Create your views here.
 @api_view(["GET"])
-def book_list(request):
+def book_list(request, amount):
     books = Book.objects.all()
-    paginator = BookListPagination()
+    paginator = AnyListPagination(amount=amount)
     paginated_books = paginator.paginate_queryset(books, request)
     serializer = BookSerializer(paginated_books, many=True)
     # logger.info(f"requested URL: {request.build_absolute_uri()}")
@@ -67,10 +64,23 @@ def get_reading_group(request, slug):
     return Response(serializer.data)
 
 
+# @api_view(["GET"])
+# def reading_group_list(request):
+#     reading_groups = ReadingGroup.objects.all()
+#     paginator = ReadingGroupListPagination()
+#     paginated_reading_groups = paginator.paginate_queryset(reading_groups, request)
+#     serializer = ReadingGroupSerializer(paginated_reading_groups, many=True)
+#     # logger.info(f"requested URL: {request.build_absolute_uri()}")
+#     # logger.info(f"Pagination info: {paginator.page_size} items per page requested.")
+#     # logger.info(f"Pagination info: {paginator.page.number} current page number.")
+#     # logger.info(f"Reading groups retrieved: {serializer.data}")
+#     return paginator.get_paginated_response(serializer.data)
+
+
 @api_view(["GET"])
-def reading_group_list(request):
+def reading_group_list(request, amount):
     reading_groups = ReadingGroup.objects.all()
-    paginator = ReadingGroupListPagination()
+    paginator = AnyListPagination(amount=amount)
     paginated_reading_groups = paginator.paginate_queryset(reading_groups, request)
     serializer = ReadingGroupSerializer(paginated_reading_groups, many=True)
     # logger.info(f"requested URL: {request.build_absolute_uri()}")

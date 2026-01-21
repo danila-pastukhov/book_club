@@ -1,8 +1,8 @@
 import api from "@/api";
 
-export async function getBooks(page) {
+export async function getBooks(page, amount) {
   try {
-    const response = await api.get(`book_list?page=${page}`);
+    const response = await api.get(`book_list/${amount}/?page=${page}`);
     return response.data;
   } catch (err) {
     throw new Error(err.message);
@@ -27,9 +27,18 @@ export async function getBookPage(slug) { // REM
   }
 }
 
-export async function getReadingGroups(page) {  // REM
+// export async function getReadingGroups(page) {  // REM - older
+//   try {
+//     const response = await api.get(`group_list?page=${page}`);
+//     return response.data;
+//   } catch (err) {
+//     throw new Error(err.message);
+//   }
+// }
+
+export async function getReadingGroups(page, amount) {  // REM
   try {
-    const response = await api.get(`group_list?page=${page}`);
+    const response = await api.get(`group_list/${amount}/?page=${page}`);
     return response.data;
   } catch (err) {
     throw new Error(err.message);

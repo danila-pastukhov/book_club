@@ -11,6 +11,7 @@ import ProtectedRoute from "./ui_components/ProtectedRoute";
 import ProfilePage from "./pages/ProfilePage";
 import BookPagesPage from "./pages/BookPagesPage";
 import AllReadingGroupsPage from "./pages/AllReadingGroupsPage";
+import AllBooksPage from "./pages/AllBooksPage";
 import CreateReadingGroupPage from "./pages/CreateReadingGroupPage";
 import { useEffect, useState } from "react";
 import { getUsername } from "./services/apiBook";
@@ -56,9 +57,10 @@ const App = () => {
           <Route path="books/:slug" element={<DetailPage username={username} isAuthenticated={isAuthenticated} />} />
           <Route path="groups/:slug" element={<ReadingGroupPage username={username} isAuthenticated={isAuthenticated} />} />
           <Route path="groups" element={<AllReadingGroupsPage username={username} isAuthenticated={isAuthenticated} />} />
+          <Route path="books" element={<AllBooksPage username={username} isAuthenticated={isAuthenticated} />} />
           <Route path="signup" element={<SignupPage />} />
           <Route
-            path="create"
+            path="create_book"
             element={
               <ProtectedRoute>
                 <CreatePostPage isAuthenticated={isAuthenticated} />
