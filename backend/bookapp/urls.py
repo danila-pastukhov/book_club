@@ -26,4 +26,5 @@ urlpatterns = [
     path("books/", views.book_list, name="get_books"),  # REM
     path("books/<slug:slug>/page", views.get_book, name="get_book_page"),
     path("create_group/", views.create_reading_group, name="create_reading_group"),
+    path("group/<int:pk>/add_user/", views.add_user_to_group, name="add_user_to_group"),
 ]

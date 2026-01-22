@@ -166,6 +166,17 @@ def update_reading_group(request, pk):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def add_user_to_group(request, pk):
+    user = request.user
+    reading_group = ReadingGroup.objects.get(id=pk)
+    reading_group.user.add(user)
+    serializer = ReadingGroupSerializer(reading_group)
+    return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 # @api_view(["PUT"])
 # def update_book(request, pk):
 #     book = Book.objects.get(id=pk)

@@ -4,7 +4,7 @@ import Badge from "@/ui_components/Badge";
 import GroupCreator from "@/ui_components/GroupCreator";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { deleteReadingGroup, getReadingGroup } from "@/services/apiBook";
+import { deleteReadingGroup, getReadingGroup, addUserToGroup} from "@/services/apiBook";
 import Spinner from "@/ui_components/Spinner";
 import { BASE_URL } from "@/api";
 import { HiPencilAlt } from "react-icons/hi";
@@ -13,8 +13,12 @@ import Modal from "@/ui_components/Modal";
 import CreatePostPage from "./CreatePostPage";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import SmallSpinner from "@/ui_components/SmallSpinner";
+import SmallSpinnerText from "@/ui_components/SmallSpinnerText";
+
 
 const ReadingGroupPage = ({ username, isAuthenticated }) => {
+
   const { slug } = useParams();
   const [showModal, setShowModal] = useState(false)
   const navigate = useNavigate()
@@ -49,6 +53,22 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
     }
   })
 
+
+  const mutation = useMutation({
+    mutationFn: (id) => addUserToGroup(id),
+    onSuccess: () => {
+      toast.success("You have successfully joined the group!");
+    },
+  });
+
+
+  function onSubmit() {
+    
+      mutation.mutate(reading_groupID);
+    
+  }
+
+
   function handleDeleteReadingGroup(){
     const popUp = window.confirm("Are you sure you want to delete this group? Haha group not post")  // REM
     if(!popUp){
@@ -69,6 +89,7 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
 
   return (
     <>
+
       <div className="padding-dx max-container py-9 gap-6 flex flex-col">
         <div className="flex justify-between items-center gap-4">
           <span className="flex items-center gap-6">
@@ -82,6 +103,19 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
               {reading_group.name}
             </h1>
           </span>
+          <button onClick={onSubmit}
+              disabled={mutation.isPending}
+              className="bg-[#4B6BFB] text-white py-3 px-8 rounded-md flex items-right justify-center gap-2"
+              >
+                {mutation.isPending ? (
+                  <>
+                    {" "}
+                    <SmallSpinner /> <SmallSpinnerText text="Joining group..." />{" "}
+                  </>
+                  ) : (
+                    <SmallSpinnerText text="Join group" />
+                )}
+              </button>
           {isAuthenticated && username === reading_group.creator.username && (
             <span className="flex justify-between items-center gap-2">
               <HiPencilAlt onClick={toggleModal} className="dark:text-white text-3xl cursor-pointer" />

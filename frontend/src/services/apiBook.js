@@ -183,3 +183,16 @@ export async function updateProfile(data) {
     throw new Error(err.message);
   }
 }
+
+export async function addUserToGroup(id) {
+  try {
+    const response = await api.put(`group/${id}/add_user/`);
+    return response.data;
+  } catch (err) {
+    if (err.response) {
+      throw new Error(err.response?.data?.message || "Failed to add user to group");
+    }
+
+    throw new Error(err.message);
+  }
+}
