@@ -2,7 +2,7 @@ import { Switch } from "@/components/ui/switch";
 import { FaHamburger } from "react-icons/fa";
 import ResponsiveNavBar from "./ResponsiveNavBar";
 import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 const NavBar = ({
   darkMode,
@@ -13,12 +13,14 @@ const NavBar = ({
   setUsername,
 }) => {
   const [showNavBar, setShowNavBar] = useState(false);
+  const navigate = useNavigate();
 
   function logout() {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
     setIsAuthenticated(false);
     setUsername(null);
+    navigate("/");
   }
 
   return (

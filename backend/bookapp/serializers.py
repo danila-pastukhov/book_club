@@ -148,9 +148,40 @@ class BookSerializer(serializers.ModelSerializer):
         return data
 
 
+class UserWithStatusSerializer(serializers.ModelSerializer):
+    """Serializer for users that includes their in_reading_group status."""
+    in_reading_group = serializers.SerializerMethodField()
+
+    class Meta:
+        model = get_user_model()
+        fields = [
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "profile_picture",
+            "in_reading_group",
+        ]
+
+    def get_in_reading_group(self, obj):
+        """Get the in_reading_group status from the through table."""
+        reading_group_id = self.context.get('reading_group_id')
+        if reading_group_id:
+            try:
+                state = UserToReadingGroupState.objects.get(
+                    user=obj,
+                    reading_group_id=reading_group_id
+                )
+                return state.in_reading_group
+            except UserToReadingGroupState.DoesNotExist:
+                return False
+        return False
+
+
 class ReadingGroupSerializer(serializers.ModelSerializer):  # REM
     creator = SimpleAuthorSerializer(read_only=True)
-    user = SimpleAuthorSerializer(many=True, read_only=True)
+    user = serializers.SerializerMethodField()
 
     class Meta:
         model = ReadingGroup
@@ -164,6 +195,16 @@ class ReadingGroupSerializer(serializers.ModelSerializer):  # REM
             "user",
             "description",
         ]
+
+    def get_user(self, obj):
+        """Get all users with their in_reading_group status."""
+        users = obj.user.all()
+        serializer = UserWithStatusSerializer(
+            users,
+            many=True,
+            context={'reading_group_id': obj.id}
+        )
+        return serializer.data
 
 
 class NotificationSerializer(serializers.ModelSerializer):

@@ -66,6 +66,7 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
     onSuccess: () => {
       toast.success("Отправлена нотификация.");
       queryClient.invalidateQueries({ queryKey: ["groups", slug] });
+      queryClient.invalidateQueries({ queryKey: ["userToReadingGroupState", reading_groupID] });
     },
   });
 
@@ -89,6 +90,7 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
     onSuccess: () => {
       toast.success("Вы успешно покинули группу!");
       queryClient.invalidateQueries({ queryKey: ["groups", slug] });
+      queryClient.invalidateQueries({ queryKey: ["userToReadingGroupState", reading_groupID] });
     },
     onError: (err) => {
       toast.error(err.message)
@@ -105,6 +107,11 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
   function handleLeaveGroup() {
     leaveMutation.mutate(reading_groupID);
   }
+
+  // Filter users to only show confirmed members (in_reading_group = true)
+  const confirmedMembers = reading_group?.user?.filter(member =>
+    member.in_reading_group === true
+  ) || [];
 
   // Check if current user is a member of the group
   const isUserMember = userStates?.some(state => state.reading_group.id === reading_groupID && state.in_reading_group && state.user.username === username);
@@ -222,11 +229,11 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
 
         <div className="mt-8">
           <h2 className="text-xl md:text-2xl font-semibold text-[#181A2A] dark:text-[#FFFFFF] mb-4">
-            Group Members ({reading_group.user?.length || 0})
+            Group Members ({confirmedMembers.length})
           </h2>
-          {reading_group.user && reading_group.user.length > 0 ? (
+          {confirmedMembers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {reading_group.user.map((member) => (
+              {confirmedMembers.map((member) => (
                 <div key={member.id} className="flex flex-col items-center p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
                   <div className="w-16 h-16 rounded-full overflow-hidden mb-3">
                     <img
