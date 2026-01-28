@@ -90,11 +90,11 @@ WSGI_APPLICATION = "book_api.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config('DB_NAME', default='bookclub_db'),
-        "USER": config('DB_USER', default='bookclub'),
-        "PASSWORD": config('DB_PASSWORD', default='sD9fG3hJ7kL1zX6c'),
-        "HOST": config('DB_HOST', default='109.173.104.21'),
-        "PORT": config('DB_PORT', default='56424'),
+        "NAME": config('DB_NAME'),
+        "USER": config('DB_USER'),
+        "PASSWORD": config('DB_PASSWORD'),
+        "HOST": config('DB_HOST'),
+        "PORT": config('DB_PORT'),
     }
 }
 

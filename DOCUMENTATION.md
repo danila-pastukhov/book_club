@@ -119,8 +119,8 @@ Contains all business logic:
 **settings.py**:
 - Custom user model: `AUTH_USER_MODEL = "bookapp.CustomUser"`
 - JWT access token lifetime: 60 minutes
-- PostgreSQL connection (remote server: 109.173.104.21:56424)
-- CORS origins: localhost:5173-5175, production URLs
+- PostgreSQL connection (remote server: DB_HOST:DB_PORT)
+- CORS origins: localhost:5173-5175 (for test)
 - Media URL: `/img/`, Media root: `media/`
 - Logging: File (app.log) and console
 
