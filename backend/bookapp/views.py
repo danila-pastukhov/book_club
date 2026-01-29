@@ -196,17 +196,7 @@ def get_notification(request, id):
     return Response(serializer.data)
 
 
-# @api_view(["GET"])
-# def reading_group_list(request):
-#     reading_groups = ReadingGroup.objects.all()
-#     paginator = ReadingGroupListPagination()
-#     paginated_reading_groups = paginator.paginate_queryset(reading_groups, request)
-#     serializer = ReadingGroupSerializer(paginated_reading_groups, many=True)
-#     # logger.info(f"requested URL: {request.build_absolute_uri()}")
-#     # logger.info(f"Pagination info: {paginator.page_size} items per page requested.")
-#     # logger.info(f"Pagination info: {paginator.page.number} current page number.")
-#     # logger.info(f"Reading groups retrieved: {serializer.data}")
-#     return paginator.get_paginated_response(serializer.data)
+
 
 
 @api_view(["GET"])
@@ -215,10 +205,7 @@ def reading_group_list(request, amount):
     paginator = AnyListPagination(amount=amount)
     paginated_reading_groups = paginator.paginate_queryset(reading_groups, request)
     serializer = ReadingGroupSerializer(paginated_reading_groups, many=True)
-    # logger.info(f"requested URL: {request.build_absolute_uri()}")
-    # logger.info(f"Pagination info: {paginator.page_size} items per page requested.")
-    # logger.info(f"Pagination info: {paginator.page.number} current page number.")
-    # logger.info(f"Reading groups retrieved: {serializer.data}")
+
     return paginator.get_paginated_response(serializer.data)
 
 
@@ -230,9 +217,7 @@ def user_to_reading_group_state_list(request, pk):
         reading_group_id=pk, user=user
     )
 
-    # logging.warning(
-    #     f"User to Reading Group States retrieved: {user_to_reading_group_states}"
-    # )
+
 
     serializer = UserToReadingGroupStateSerializer(
         user_to_reading_group_states, many=True
@@ -482,16 +467,6 @@ def remove_user_from_group(request, pk):
     reading_group.user.remove(user)
     serializer = ReadingGroupSerializer(reading_group)
     return Response(serializer.data)
-
-
-# @api_view(["PUT"])
-# def update_book(request, pk):
-#     book = Book.objects.get(id=pk)
-#     serializer = BookSerializer(book, data=request.data)
-#     if serializer.is_valid():
-#         serializer.save()
-#         return Response(serializer.data)
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])

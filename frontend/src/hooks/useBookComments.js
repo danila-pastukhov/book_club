@@ -10,7 +10,7 @@ import {
   getUserReadingGroups,
 } from '@/services/apiBook';
 
-export const useBookComments = (slug) => {
+export const useBookComments = (slug, isAuthenticated = true) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
@@ -21,10 +21,11 @@ export const useBookComments = (slug) => {
 
   const readingGroupId = searchParams.get('reading_group_id');
 
-  // Fetch user's reading groups
+  // Fetch user's reading groups (only if authenticated)
   const { data: userGroups, isLoading: userGroupsLoading } = useQuery({
     queryKey: ['userReadingGroups'],
     queryFn: getUserReadingGroups,
+    enabled: isAuthenticated,
   });
 
   // Set initial selected group from URL
@@ -57,7 +58,7 @@ export const useBookComments = (slug) => {
         return data;
       });
     },
-    enabled: !!slug && (commentType === 'personal' || !!readingGroupId),
+    enabled: isAuthenticated && !!slug && (commentType === 'personal' || !!readingGroupId),
   });
 
   // Callback to run after successful comment creation
@@ -201,6 +202,7 @@ export const useBookComments = (slug) => {
     readingGroupId,
     userGroups,
     userGroupsLoading,
+    isAuthenticated,
 
     // Mutation states
     isSubmitting: createCommentMutation.isPending || updateCommentMutation.isPending,

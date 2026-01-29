@@ -26,6 +26,9 @@ const EpubReaderPage = () => {
   const [showCommentsSidebar, setShowCommentsSidebar] = useState(true);
   const prevSidebarVisibilityRef = useRef(true);
 
+  // Check if user has a token (basic auth check)
+  const hasToken = !!localStorage.getItem('access');
+
   // Fetch book data
   const {
     data: book,
@@ -43,18 +46,20 @@ const EpubReaderPage = () => {
     enabled: !!book && book.content_type === 'epub',
   });
 
-  // Fetch current user
+  // Fetch current user (only if has token)
   const { data: userData, error: userError } = useQuery({
     queryKey: ['username'],
     queryFn: getUsername,
+    enabled: hasToken,
+    retry: false,
   });
 
-  // Show warning if user data fails to load
+  // Show warning if user data fails to load (only if has token)
   useEffect(() => {
-    if (userError) {
+    if (hasToken && userError) {
       toast.warn('Could not load user data. Some features may be limited.');
     }
-  }, [userError]);
+  }, [hasToken, userError]);
 
   // Custom hooks
   const {
@@ -88,6 +93,7 @@ const EpubReaderPage = () => {
     userGroups,
     userGroupsLoading,
     isSubmitting,
+    isAuthenticated: isAuth,
     handleSubmitComment,
     handleEditComment,
     handleDeleteComment,
@@ -95,7 +101,7 @@ const EpubReaderPage = () => {
     handleCloseCommentForm,
     handleSelectGroup,
     handleCommentTypeChange,
-  } = useBookComments(slug);
+  } = useBookComments(slug, hasToken);
 
   const {
     showCommentButton,
@@ -296,6 +302,7 @@ const EpubReaderPage = () => {
             onSelectGroup={handleSelectGroup}
             selectedGroup={selectedGroup}
             bookSlug={slug}
+            isAuthenticated={isAuth}
           />
         )}
 
@@ -336,15 +343,17 @@ const EpubReaderPage = () => {
         </div>
       )}
 
-      {/* Floating Comment Button */}
-      <CommentButton
-        position={commentButtonPosition}
-        onClick={handleOpenCommentForm}
-        visible={showCommentButton}
-      />
+      {/* Floating Comment Button (only for authenticated users) */}
+      {isAuth && (
+        <CommentButton
+          position={commentButtonPosition}
+          onClick={handleOpenCommentForm}
+          visible={showCommentButton}
+        />
+      )}
 
-      {/* Comment Form Modal */}
-      {showCommentForm && (
+      {/* Comment Form Modal (only for authenticated users) */}
+      {isAuth && showCommentForm && (
         <CommentForm
           selectedText={editingComment ? null : selectedTextData?.text}
           onSubmit={onSubmitComment}

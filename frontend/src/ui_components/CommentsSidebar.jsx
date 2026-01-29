@@ -23,6 +23,7 @@ const CommentsSidebar = ({
   onSelectGroup,
   selectedGroup,
   bookSlug,
+  isAuthenticated = true,
 }) => {
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -62,78 +63,84 @@ const CommentsSidebar = ({
           </button>
         </div>
 
-        {/* Comment Type Toggle */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              onCommentTypeChange('personal');
-              setShowGroupDropdown(false);
-            }}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              commentType === 'personal'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            Personal
-          </button>
-          <div className="flex-1 relative" ref={dropdownRef}>
+        {/* Comment Type Toggle (only for authenticated users) */}
+        {isAuthenticated ? (
+          <div className="flex gap-2">
             <button
               onClick={() => {
-                if (commentType === 'group' && readingGroupId) {
-                  // If already in group mode, toggle dropdown
-                  setShowGroupDropdown(!showGroupDropdown);
-                } else {
-                  // If in personal mode, show dropdown to select a group
-                  setShowGroupDropdown(!showGroupDropdown);
-                }
+                onCommentTypeChange('personal');
+                setShowGroupDropdown(false);
               }}
-              className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                commentType === 'group'
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                commentType === 'personal'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
-              <HiUserGroup size={16} />
-              <span>Group</span>
-              <IoChevronDown size={14} />
+              Personal
             </button>
+            <div className="flex-1 relative" ref={dropdownRef}>
+              <button
+                onClick={() => {
+                  if (commentType === 'group' && readingGroupId) {
+                    // If already in group mode, toggle dropdown
+                    setShowGroupDropdown(!showGroupDropdown);
+                  } else {
+                    // If in personal mode, show dropdown to select a group
+                    setShowGroupDropdown(!showGroupDropdown);
+                  }
+                }}
+                className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                  commentType === 'group'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                <HiUserGroup size={16} />
+                <span>Group</span>
+                <IoChevronDown size={14} />
+              </button>
 
-            {/* Group Dropdown */}
-            {showGroupDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
-                {userGroupsLoading ? (
-                  <div className="flex justify-center items-center p-4">
-                    <SmallSpinner />
-                  </div>
-                ) : userGroups && userGroups.length > 0 ? (
-                  <div className="py-1">
-                    {userGroups.map((group) => (
-                      <button
-                        key={group.id}
-                        onClick={() => {
-                          onSelectGroup(group);
-                          setShowGroupDropdown(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                          selectedGroup?.id === group.id
-                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                            : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {group.name}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                    You are not a member of any reading groups
-                  </div>
-                )}
-              </div>
-            )}
+              {/* Group Dropdown */}
+              {showGroupDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
+                  {userGroupsLoading ? (
+                    <div className="flex justify-center items-center p-4">
+                      <SmallSpinner />
+                    </div>
+                  ) : userGroups && userGroups.length > 0 ? (
+                    <div className="py-1">
+                      {userGroups.map((group) => (
+                        <button
+                          key={group.id}
+                          onClick={() => {
+                            onSelectGroup(group);
+                            setShowGroupDropdown(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                            selectedGroup?.id === group.id
+                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {group.name}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                      You are not a member of any reading groups
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-400">
+            Sign in to view and add comments
+          </div>
+        )}
       </div>
 
       {/* Content */}
