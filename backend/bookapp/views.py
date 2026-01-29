@@ -22,6 +22,8 @@ from .serializers import (
     BookCommentCreateSerializer,
     BookCommentSerializer,
     BookSerializer,
+    CommentReplyCreateSerializer,
+    CommentReplySerializer,
     NotificationSerializer,
     ReadingGroupSerializer,
     SimpleAuthorSerializer,
@@ -624,17 +626,19 @@ def get_book_comments(request, slug):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
-            # Get all comments for this book in this reading group
+            # Get all root comments for this book in this reading group (exclude replies)
             comments = BookComment.objects.filter(
                 book=book,
-                reading_group=reading_group
+                reading_group=reading_group,
+                parent_comment__isnull=True  # Only root comments
             ).select_related('user', 'book', 'reading_group')
         else:
-            # Get personal comments (only for current user)
+            # Get personal comments (only for current user, exclude replies)
             comments = BookComment.objects.filter(
                 book=book,
                 user=user,
-                reading_group__isnull=True
+                reading_group__isnull=True,
+                parent_comment__isnull=True  # Only root comments
             ).select_related('user', 'book')
 
         serializer = BookCommentSerializer(comments, many=True)
@@ -855,6 +859,252 @@ def delete_book_comment(request, slug, comment_id):
         )
     except Exception as e:
         logger.error(f"Error deleting book comment: {e}")
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+# Comment Replies Views
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_comment_replies(request, slug, comment_id):
+    """
+    Get all replies for a specific comment.
+    Only accessible to users who can view the parent comment.
+    """
+    try:
+        book = Book.objects.get(slug=slug)
+        parent_comment = BookComment.objects.select_related(
+            'reading_group', 'user'
+        ).get(id=comment_id, book=book)
+
+        user = request.user
+
+        # Check access permissions based on parent comment type
+        if parent_comment.reading_group:
+            # Group comment - check if user is a confirmed member
+            try:
+                membership = UserToReadingGroupState.objects.get(
+                    user=user,
+                    reading_group=parent_comment.reading_group
+                )
+                if not membership.in_reading_group:
+                    return Response(
+                        {"error": "You must be a confirmed member of this reading group to view replies"},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except UserToReadingGroupState.DoesNotExist:
+                return Response(
+                    {"error": "You must be a member of this reading group to view replies"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        else:
+            # Personal comment - only the owner can view replies
+            if parent_comment.user != user:
+                return Response(
+                    {"error": "You can only view replies to your own personal comments"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+        # Get all replies to this comment
+        replies = BookComment.objects.filter(
+            parent_comment=parent_comment
+        ).select_related('user').order_by('created_at')
+
+        serializer = CommentReplySerializer(replies, many=True)
+        return Response(serializer.data)
+
+    except Book.DoesNotExist:
+        return Response(
+            {"error": "Book not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except BookComment.DoesNotExist:
+        return Response(
+            {"error": "Comment not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(f"Error getting comment replies: {e}")
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_comment_reply(request, slug, comment_id):
+    """
+    Create a reply to an existing comment.
+    For group comments: any confirmed group member can reply.
+    For personal comments: only the owner can reply.
+    """
+    try:
+        book = Book.objects.get(slug=slug)
+        parent_comment = BookComment.objects.select_related(
+            'reading_group', 'user', 'book'
+        ).get(id=comment_id, book=book)
+
+        user = request.user
+
+        serializer = CommentReplyCreateSerializer(
+            data=request.data,
+            context={
+                'request': request,
+                'parent_comment': parent_comment
+            }
+        )
+
+        if serializer.is_valid():
+            # Create the reply with inherited fields from parent
+            reply = BookComment.objects.create(
+                book=parent_comment.book,
+                reading_group=parent_comment.reading_group,
+                user=user,
+                parent_comment=parent_comment,
+                comment_text=serializer.validated_data['comment_text'],
+                # Replies don't have CFI range or selected text
+                cfi_range=None,
+                selected_text=None,
+                highlight_color=parent_comment.highlight_color  # Inherit color from parent
+            )
+
+            response_serializer = CommentReplySerializer(reply)
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Book.DoesNotExist:
+        return Response(
+            {"error": "Book not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except BookComment.DoesNotExist:
+        return Response(
+            {"error": "Comment not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(f"Error creating comment reply: {e}")
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["PUT", "PATCH"])
+@permission_classes([IsAuthenticated])
+def update_comment_reply(request, slug, comment_id, reply_id):
+    """
+    Update an existing reply.
+    Only the reply author can update their reply.
+    """
+    try:
+        book = Book.objects.get(slug=slug)
+        parent_comment = BookComment.objects.get(id=comment_id, book=book)
+        reply = BookComment.objects.get(
+            id=reply_id,
+            parent_comment=parent_comment
+        )
+
+        user = request.user
+
+        # Check if user is the reply author
+        if reply.user != user:
+            return Response(
+                {"error": "You can only edit your own replies"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Only allow updating comment_text
+        data = {'comment_text': request.data.get('comment_text', reply.comment_text)}
+
+        serializer = CommentReplySerializer(reply, data=data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Book.DoesNotExist:
+        return Response(
+            {"error": "Book not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except BookComment.DoesNotExist:
+        return Response(
+            {"error": "Comment or reply not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(f"Error updating comment reply: {e}")
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_comment_reply(request, slug, comment_id, reply_id):
+    """
+    Delete a reply.
+    For group comments: reply author or group creator can delete.
+    For personal comments: only reply author can delete.
+    """
+    try:
+        book = Book.objects.get(slug=slug)
+        parent_comment = BookComment.objects.select_related(
+            'reading_group'
+        ).get(id=comment_id, book=book)
+        reply = BookComment.objects.get(
+            id=reply_id,
+            parent_comment=parent_comment
+        )
+
+        user = request.user
+
+        # Check deletion permissions
+        if parent_comment.reading_group:
+            # Group comment reply - author or group creator can delete
+            if reply.user != user and parent_comment.reading_group.creator != user:
+                return Response(
+                    {"error": "You can only delete your own replies or replies in groups you created"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        else:
+            # Personal comment reply - only author can delete
+            if reply.user != user:
+                return Response(
+                    {"error": "You can only delete your own replies"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+        reply.delete()
+        return Response(
+            {"message": "Reply deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    except Book.DoesNotExist:
+        return Response(
+            {"error": "Book not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except BookComment.DoesNotExist:
+        return Response(
+            {"error": "Comment or reply not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(f"Error deleting comment reply: {e}")
         return Response(
             {"error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR

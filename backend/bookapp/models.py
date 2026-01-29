@@ -10,6 +10,26 @@ from .validators import (
     validate_file_is_not_empty,
 )
 
+# Cyrillic to Latin transliteration map
+CYRILLIC_TO_LATIN = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+    'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+    'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+    'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+    'Ф': 'F', 'Х': 'Kh', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
+    'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya',
+}
+
+
+def transliterate(text):
+    """Transliterate Cyrillic characters to Latin."""
+    return ''.join(CYRILLIC_TO_LATIN.get(char, char) for char in text)
+
+
 # Create your models here.
 
 
@@ -99,9 +119,11 @@ class Book(models.Model):
         super().save(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        base_slug = slugify(self.title)
+        # Transliterate title to Latin characters before slugifying
+        transliterated_title = transliterate(self.title)
+        base_slug = slugify(transliterated_title)
         slug = base_slug
-        num = 1  # Possible REM below (on .exclude)
+        num = 1
         while Book.objects.filter(slug=slug).exclude(id=self.id).exists():
             slug = f"{base_slug}-{num}"
             num += 1
@@ -149,7 +171,9 @@ class ReadingGroup(models.Model):  # REM
         return self.name
 
     def save(self, *args, **kwargs):
-        base_slug = slugify(self.name)
+        # Transliterate name to Latin characters before slugifying
+        transliterated_name = transliterate(self.name)
+        base_slug = slugify(transliterated_name)
         slug = base_slug
         num = 1
         while ReadingGroup.objects.filter(slug=slug).exclude(id=self.id).exists():
@@ -243,12 +267,27 @@ class BookComment(models.Model):
         related_name='book_comments'
     )
 
+    # Parent comment for replies (null for root comments)
+    parent_comment = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        related_name='replies',
+        null=True,
+        blank=True,
+        help_text="Parent comment if this is a reply (null for root comments)"
+    )
+
     # Text location data (EPUB CFI - Canonical Fragment Identifier)
+    # These fields are optional for replies (replies don't have their own text selection)
     cfi_range = models.TextField(
-        help_text="EPUB CFI range identifying the exact text location"
+        blank=True,
+        null=True,
+        help_text="EPUB CFI range identifying the exact text location (null for replies)"
     )
     selected_text = models.TextField(
-        help_text="The actual text that was selected and commented on"
+        blank=True,
+        null=True,
+        help_text="The actual text that was selected and commented on (null for replies)"
     )
 
     # Comment content
@@ -271,7 +310,18 @@ class BookComment(models.Model):
             models.Index(fields=['book', 'reading_group']),
             models.Index(fields=['user', 'reading_group']),
             models.Index(fields=['book', 'user']),  # For personal comments
+            models.Index(fields=['parent_comment']),  # For fetching replies
         ]
 
     def __str__(self):
         return f"{self.user.username} on {self.book.title[:30]} - {self.comment_text[:50]}"
+
+    @property
+    def is_reply(self):
+        """Check if this comment is a reply to another comment."""
+        return self.parent_comment is not None
+
+    @property
+    def replies_count(self):
+        """Get the number of replies to this comment."""
+        return self.replies.count()

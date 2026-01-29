@@ -22,6 +22,7 @@ const CommentsSidebar = ({
   userGroupsLoading,
   onSelectGroup,
   selectedGroup,
+  bookSlug,
 }) => {
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -186,6 +187,8 @@ const CommentsSidebar = ({
                 onDelete={onDelete}
                 onJumpTo={onJumpTo}
                 isActive={activeCommentId === comment.id}
+                isGroupComment={commentType === 'group'}
+                bookSlug={bookSlug}
               />
             ))}
           </div>

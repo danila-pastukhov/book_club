@@ -392,3 +392,71 @@ export async function deleteBookComment(slug, commentId) {
     throw new Error(err.message)
   }
 }
+
+// Comment Replies API Functions
+
+export async function getCommentReplies(slug, commentId) {
+  try {
+    const response = await api.get(
+      `books/${slug}/comments/${commentId}/replies/`
+    )
+    return response.data
+  } catch (err) {
+    if (err.response) {
+      throw new Error(
+        err.response?.data?.error || 'Failed to fetch replies'
+      )
+    }
+    throw new Error(err.message)
+  }
+}
+
+export async function createCommentReply(slug, commentId, data) {
+  try {
+    const response = await api.post(
+      `books/${slug}/comments/${commentId}/replies/create/`,
+      data
+    )
+    return response.data
+  } catch (err) {
+    if (err.response) {
+      throw new Error(
+        err.response?.data?.error || 'Failed to create reply'
+      )
+    }
+    throw new Error(err.message)
+  }
+}
+
+export async function updateCommentReply(slug, commentId, replyId, data) {
+  try {
+    const response = await api.put(
+      `books/${slug}/comments/${commentId}/replies/${replyId}/update/`,
+      data
+    )
+    return response.data
+  } catch (err) {
+    if (err.response) {
+      throw new Error(
+        err.response?.data?.error || 'Failed to update reply'
+      )
+    }
+    throw new Error(err.message)
+  }
+}
+
+export async function deleteCommentReply(slug, commentId, replyId) {
+  try {
+    const response = await api.delete(
+      `books/${slug}/comments/${commentId}/replies/${replyId}/delete/`
+    )
+    return response.data
+  } catch (err) {
+    if (err.response) {
+      throw new Error(
+        err.response?.data?.error || 'Failed to delete reply'
+      )
+    }
+    throw new Error(err.message)
+  }
+}

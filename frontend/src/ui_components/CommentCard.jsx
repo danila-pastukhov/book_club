@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { BiEdit, BiTrash } from 'react-icons/bi';
 import { BsQuote } from 'react-icons/bs';
+import { IoChevronDown, IoChevronUp, IoChatbubbleOutline } from 'react-icons/io5';
 import { BASE_URL } from "@/api";
+import useCommentReplies from '@/hooks/useCommentReplies';
+import CommentReplies from './CommentReplies';
 
 const CommentCard = ({
   comment,
@@ -10,10 +13,30 @@ const CommentCard = ({
   onDelete,
   onJumpTo,
   isActive = false,
+  isGroupComment = false,
+  bookSlug,
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
 
   const isOwner = currentUser && comment.user.username === currentUser;
+
+  // Hook for managing replies (only enabled when replies section is open)
+  const {
+    replies,
+    repliesLoading,
+    editingReply,
+    showReplyForm,
+    isSubmitting,
+    isDeleting,
+    handleSubmitReply,
+    handleEditReply,
+    handleDeleteReply,
+    handleOpenReplyForm,
+    handleCloseReplyForm,
+  } = useCommentReplies(bookSlug, comment.id, showReplies && isGroupComment);
+
+  const repliesCount = comment.replies_count || 0;
 
   const handleDelete = () => {
     onDelete(comment.id);
@@ -152,6 +175,46 @@ const CommentCard = ({
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Replies Section - Only for group comments */}
+      {isGroupComment && (
+        <div className="mt-3">
+          {/* Toggle Replies Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowReplies(!showReplies);
+            }}
+            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            <IoChatbubbleOutline size={16} />
+            <span>
+              {repliesCount > 0 ? `${repliesCount} ${repliesCount === 1 ? 'reply' : 'replies'}` : 'Reply'}
+            </span>
+            {repliesCount > 0 && (
+              showReplies ? <IoChevronUp size={14} /> : <IoChevronDown size={14} />
+            )}
+          </button>
+
+          {/* Replies Content */}
+          {showReplies && (
+            <CommentReplies
+              replies={replies}
+              repliesLoading={repliesLoading}
+              currentUser={currentUser}
+              showReplyForm={showReplyForm}
+              editingReply={editingReply}
+              isSubmitting={isSubmitting}
+              isDeleting={isDeleting}
+              onSubmitReply={handleSubmitReply}
+              onEditReply={handleEditReply}
+              onDeleteReply={handleDeleteReply}
+              onOpenReplyForm={handleOpenReplyForm}
+              onCloseReplyForm={handleCloseReplyForm}
+            />
+          )}
         </div>
       )}
     </div>

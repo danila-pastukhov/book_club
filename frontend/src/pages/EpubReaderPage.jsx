@@ -295,6 +295,7 @@ const EpubReaderPage = () => {
             userGroupsLoading={userGroupsLoading}
             onSelectGroup={handleSelectGroup}
             selectedGroup={selectedGroup}
+            bookSlug={slug}
           />
         )}
 

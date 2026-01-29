@@ -98,4 +98,25 @@ urlpatterns = [
         views.delete_book_comment,
         name="delete_book_comment"
     ),
+    # Comment Replies endpoints
+    path(
+        "books/<slug:slug>/comments/<int:comment_id>/replies/",
+        views.get_comment_replies,
+        name="get_comment_replies"
+    ),
+    path(
+        "books/<slug:slug>/comments/<int:comment_id>/replies/create/",
+        views.create_comment_reply,
+        name="create_comment_reply"
+    ),
+    path(
+        "books/<slug:slug>/comments/<int:comment_id>/replies/<int:reply_id>/update/",
+        views.update_comment_reply,
+        name="update_comment_reply"
+    ),
+    path(
+        "books/<slug:slug>/comments/<int:comment_id>/replies/<int:reply_id>/delete/",
+        views.delete_comment_reply,
+        name="delete_comment_reply"
+    ),
 ]

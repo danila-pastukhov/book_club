@@ -270,6 +270,8 @@ class BookCommentSerializer(serializers.ModelSerializer):
     book_title = serializers.CharField(source='book.title', read_only=True)
     reading_group_slug = serializers.CharField(source='reading_group.slug', read_only=True, allow_null=True)
     reading_group_name = serializers.CharField(source='reading_group.name', read_only=True, allow_null=True)
+    replies_count = serializers.IntegerField(read_only=True)
+    is_reply = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = BookComment
@@ -282,19 +284,21 @@ class BookCommentSerializer(serializers.ModelSerializer):
             "reading_group_slug",
             "reading_group_name",
             "user",
+            "parent_comment",
             "cfi_range",
             "selected_text",
             "comment_text",
             "highlight_color",
             "created_at",
             "updated_at",
+            "replies_count",
+            "is_reply",
         ]
-        read_only_fields = ["id", "user", "created_at", "updated_at"]
+        read_only_fields = ["id", "user", "created_at", "updated_at", "replies_count", "is_reply"]
 
     def validate_cfi_range(self, value):
-        """Validate that cfi_range is not empty."""
-        if not value or not value.strip():
-            raise serializers.ValidationError("CFI range cannot be empty")
+        """Validate that cfi_range is not empty for root comments."""
+        # Allow empty cfi_range for replies
         return value
 
     def validate_comment_text(self, value):
@@ -330,4 +334,71 @@ class BookCommentCreateSerializer(serializers.ModelSerializer):
                         "You must be a member of the reading group to comment"
                     )
             # If reading_group is None, it's a personal comment - no additional validation needed
+        return data
+
+
+class CommentReplySerializer(serializers.ModelSerializer):
+    """Serializer for comment replies."""
+    user = SimpleAuthorSerializer(read_only=True)
+
+    class Meta:
+        model = BookComment
+        fields = [
+            "id",
+            "user",
+            "parent_comment",
+            "comment_text",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user", "parent_comment", "created_at", "updated_at"]
+
+
+class CommentReplyCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating replies to comments."""
+
+    class Meta:
+        model = BookComment
+        fields = [
+            "comment_text",
+        ]
+
+    def validate_comment_text(self, value):
+        """Validate that comment text is not empty."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Reply text cannot be empty")
+        return value
+
+    def validate(self, data):
+        """Validate that the user has access to the parent comment's group."""
+        request = self.context.get('request')
+        parent_comment = self.context.get('parent_comment')
+
+        if not parent_comment:
+            raise serializers.ValidationError("Parent comment is required")
+
+        if request and request.user:
+            reading_group = parent_comment.reading_group
+            # For group comments, check if user is a confirmed member
+            if reading_group:
+                try:
+                    membership = UserToReadingGroupState.objects.get(
+                        user=request.user,
+                        reading_group=reading_group
+                    )
+                    if not membership.in_reading_group:
+                        raise serializers.ValidationError(
+                            "You must be a confirmed member of the reading group to reply"
+                        )
+                except UserToReadingGroupState.DoesNotExist:
+                    raise serializers.ValidationError(
+                        "You must be a member of the reading group to reply"
+                    )
+            else:
+                # Personal comments - only the owner can reply (or we can disable replies)
+                if parent_comment.user != request.user:
+                    raise serializers.ValidationError(
+                        "You cannot reply to other users' personal comments"
+                    )
+
         return data

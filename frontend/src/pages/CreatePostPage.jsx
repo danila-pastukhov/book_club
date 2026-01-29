@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -33,6 +33,11 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
   const [epubFileName, setEpubFileName] = useState("");
 
   const bookID = book?.id;
+
+  // Register category field for validation (without ref, since Radix Select doesn't support it)
+  useEffect(() => {
+    register("category", { required: "Категория книги обязательна" });
+  }, [register]);
 
   const updateMutation = useMutation({
     mutationFn: ({ data, id }) => updateBook(data, id),
@@ -232,8 +237,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
         <Label htmlFor="category">Категория *</Label>
 
         <Select
-          {...register("category", { required: "Категория книги обязательна" })}
-          onValueChange={(value) => setValue("category", value)}
+          onValueChange={(value) => setValue("category", value, { shouldValidate: true })}
           defaultValue={book ? book.category : ""}
         >
           <SelectTrigger className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[40px] w-full max-sm:w-[300px] max-sm:text-[14px]">
