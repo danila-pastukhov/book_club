@@ -239,6 +239,28 @@ def user_to_reading_group_state_list(request, pk):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_reading_groups(request):
+    """
+    Get all reading groups where the current user is a confirmed member.
+    Returns only groups where in_reading_group=True.
+    """
+    user = request.user
+
+    # Get all UserToReadingGroupState entries where user is confirmed member
+    user_groups = UserToReadingGroupState.objects.filter(
+        user=user,
+        in_reading_group=True
+    ).select_related('reading_group')
+
+    # Extract the reading groups
+    reading_groups = [ug.reading_group for ug in user_groups]
+
+    serializer = ReadingGroupSerializer(reading_groups, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["GET"])
 def notification_list(request, amount):
     user = request.user
     notifications = Notification.objects.filter(directed_to=user)
@@ -562,41 +584,58 @@ def get_user(request, email):
 @permission_classes([IsAuthenticated])
 def get_book_comments(request, slug):
     """
-    Get all comments for a book in a specific reading group.
+    Get all comments for a book in a specific reading group or personal comments.
     Query params:
-    - reading_group_id: ID of the reading group (required)
+    - reading_group_id: ID of the reading group (optional)
+
+    If reading_group_id is provided: return group comments (only for confirmed members)
+    If reading_group_id is not provided: return user's personal comments
     """
     try:
         book = Book.objects.get(slug=slug)
         reading_group_id = request.query_params.get('reading_group_id')
-
-        if not reading_group_id:
-            return Response(
-                {"error": "reading_group_id query parameter is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            reading_group = ReadingGroup.objects.get(id=reading_group_id)
-        except ReadingGroup.DoesNotExist:
-            return Response(
-                {"error": "Reading group not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # Check if user is a member of the reading group
         user = request.user
-        if not reading_group.user.filter(id=user.id).exists():
-            return Response(
-                {"error": "You must be a member of this reading group to view comments"},
-                status=status.HTTP_403_FORBIDDEN
-            )
 
-        # Get all comments for this book in this reading group
-        comments = BookComment.objects.filter(
-            book=book,
-            reading_group=reading_group
-        ).select_related('user', 'book', 'reading_group')
+        if reading_group_id:
+            # Get group comments
+            try:
+                reading_group = ReadingGroup.objects.get(id=reading_group_id)
+            except ReadingGroup.DoesNotExist:
+                return Response(
+                    {"error": "Reading group not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Check if user is a confirmed member of the reading group
+            from .models import UserToReadingGroupState
+            try:
+                membership = UserToReadingGroupState.objects.get(
+                    user=user,
+                    reading_group=reading_group
+                )
+                if not membership.in_reading_group:
+                    return Response(
+                        {"error": "You must be a confirmed member of this reading group to view comments"},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except UserToReadingGroupState.DoesNotExist:
+                return Response(
+                    {"error": "You must be a member of this reading group to view comments"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Get all comments for this book in this reading group
+            comments = BookComment.objects.filter(
+                book=book,
+                reading_group=reading_group
+            ).select_related('user', 'book', 'reading_group')
+        else:
+            # Get personal comments (only for current user)
+            comments = BookComment.objects.filter(
+                book=book,
+                user=user,
+                reading_group__isnull=True
+            ).select_related('user', 'book')
 
         serializer = BookCommentSerializer(comments, many=True)
 
@@ -677,13 +716,23 @@ def get_book_comment(request, slug, comment_id):
             'user', 'book', 'reading_group'
         ).get(id=comment_id, book=book)
 
-        # Check if user is a member of the reading group
         user = request.user
-        if not comment.reading_group.user.filter(id=user.id).exists():
-            return Response(
-                {"error": "You must be a member of this reading group to view this comment"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+
+        # Check access permissions
+        if comment.reading_group:
+            # Group comment - check if user is a member of the reading group
+            if not comment.reading_group.user.filter(id=user.id).exists():
+                return Response(
+                    {"error": "You must be a member of this reading group to view this comment"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        else:
+            # Personal comment - only the owner can view it
+            if comment.user != user:
+                return Response(
+                    {"error": "You can only view your own personal comments"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         serializer = BookCommentSerializer(comment)
         return Response(serializer.data)
@@ -764,19 +813,29 @@ def update_book_comment(request, slug, comment_id):
 def delete_book_comment(request, slug, comment_id):
     """
     Delete a comment.
-    Only the comment author or reading group creator can delete.
+    For group comments: only the comment author or reading group creator can delete.
+    For personal comments: only the comment author can delete.
     """
     try:
         book = Book.objects.get(slug=slug)
         comment = BookComment.objects.get(id=comment_id, book=book)
         user = request.user
 
-        # Check if user is the comment author or reading group creator
-        if comment.user != user and comment.reading_group.creator != user:
-            return Response(
-                {"error": "You can only delete your own comments or comments in groups you created"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # Check if user has permission to delete
+        if comment.reading_group:
+            # Group comment - author or group creator can delete
+            if comment.user != user and comment.reading_group.creator != user:
+                return Response(
+                    {"error": "You can only delete your own comments or comments in groups you created"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        else:
+            # Personal comment - only author can delete
+            if comment.user != user:
+                return Response(
+                    {"error": "You can only delete your own comments"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         comment.delete()
         return Response(

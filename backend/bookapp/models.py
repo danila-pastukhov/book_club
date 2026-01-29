@@ -233,7 +233,9 @@ class BookComment(models.Model):
         ReadingGroup,
         on_delete=models.CASCADE,
         related_name='book_comments',
-        help_text="Reading group this comment belongs to"
+        null=True,
+        blank=True,
+        help_text="Reading group this comment belongs to (null for personal comments)"
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -268,6 +270,7 @@ class BookComment(models.Model):
         indexes = [
             models.Index(fields=['book', 'reading_group']),
             models.Index(fields=['user', 'reading_group']),
+            models.Index(fields=['book', 'user']),  # For personal comments
         ]
 
     def __str__(self):

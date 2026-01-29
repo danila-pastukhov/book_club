@@ -21,9 +21,6 @@ const CommentCard = ({
   };
 
 
-  console.log ('Profile picture:', comment.profile_picture)
-  console.log ('User:', comment)
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -41,12 +38,18 @@ const CommentCard = ({
 
   return (
     <div
-      className={`border dark:border-gray-700 rounded-lg p-4 mb-3 transition-all cursor-pointer hover:shadow-md ${
+      className={`border dark:border-gray-700 rounded-lg p-4 mb-3 transition-all hover:shadow-md ${
+        comment.cfi_range ? 'cursor-pointer' : 'cursor-default'
+      } ${
         isActive
           ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
           : 'bg-white dark:bg-gray-800'
       }`}
-      onClick={() => onJumpTo(comment.cfi_range)}
+      onClick={() => {
+        if (comment.cfi_range) {
+          onJumpTo(comment.cfi_range);
+        }
+      }}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-2">

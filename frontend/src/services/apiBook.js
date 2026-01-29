@@ -106,6 +106,15 @@ export async function getUserToReadingGroupStates(id) {
   }
 }
 
+export async function getUserReadingGroups() {
+  try {
+    const response = await api.get('user_reading_groups/')
+    return response.data
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 
 export async function getReadingGroup(slug) {
   try {
@@ -307,11 +316,11 @@ export async function confirmUserToGroup(groupId, userId) {
 
 // Book Comments API Functions
 
-export async function getBookComments(slug, readingGroupId) {
+export async function getBookComments(slug, readingGroupId = null) {
   try {
-    const response = await api.get(
-      `books/${slug}/comments/?reading_group_id=${readingGroupId}`
-    )
+    // If readingGroupId is provided, fetch group comments; otherwise, fetch personal comments
+    const params = readingGroupId ? `?reading_group_id=${readingGroupId}` : ''
+    const response = await api.get(`books/${slug}/comments/${params}`)
     return response.data
   } catch (err) {
     if (err.response) {

@@ -9,6 +9,7 @@ const CommentForm = ({
   initialComment = '',
   isEditing = false,
   isSubmitting = false,
+  commentType = 'personal',
 }) => {
   const [commentText, setCommentText] = useState(initialComment);
   const [highlightColor, setHighlightColor] = useState('#FFFF00');
@@ -37,9 +38,18 @@ const CommentForm = ({
       <div className="bg-white dark:bg-[#181A2A] rounded-lg shadow-xl w-full max-w-md mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-            {isEditing ? 'Edit Comment' : 'Add Comment'}
-          </h3>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              {isEditing ? 'Edit Comment' : `Add ${commentType === 'personal' ? 'Personal Note' : 'Group Comment'}`}
+            </h3>
+            {!isEditing && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {commentType === 'personal'
+                  ? 'Visible only to you'
+                  : 'Visible to all confirmed group members'}
+              </p>
+            )}
+          </div>
           <button
             onClick={onCancel}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"

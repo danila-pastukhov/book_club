@@ -268,8 +268,8 @@ class BookCommentSerializer(serializers.ModelSerializer):
     user = SimpleAuthorSerializer(read_only=True)
     book_slug = serializers.CharField(source='book.slug', read_only=True)
     book_title = serializers.CharField(source='book.title', read_only=True)
-    reading_group_slug = serializers.CharField(source='reading_group.slug', read_only=True)
-    reading_group_name = serializers.CharField(source='reading_group.name', read_only=True)
+    reading_group_slug = serializers.CharField(source='reading_group.slug', read_only=True, allow_null=True)
+    reading_group_name = serializers.CharField(source='reading_group.name', read_only=True, allow_null=True)
 
     class Meta:
         model = BookComment
@@ -319,13 +319,15 @@ class BookCommentCreateSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        """Validate that the user is a member of the reading group."""
+        """Validate that the user is a member of the reading group (if group is specified)."""
         request = self.context.get('request')
         if request and request.user:
             reading_group = data.get('reading_group')
-            # Check if user is a member of the reading group
-            if reading_group and not reading_group.user.filter(id=request.user.id).exists():
-                raise serializers.ValidationError(
-                    "You must be a member of the reading group to comment"
-                )
+            # Check if user is a member of the reading group (only for group comments)
+            if reading_group:
+                if not reading_group.user.filter(id=request.user.id).exists():
+                    raise serializers.ValidationError(
+                        "You must be a member of the reading group to comment"
+                    )
+            # If reading_group is None, it's a personal comment - no additional validation needed
         return data

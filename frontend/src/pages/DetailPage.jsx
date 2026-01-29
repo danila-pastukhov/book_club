@@ -35,7 +35,7 @@ const DetailPage = ({ username, isAuthenticated }) => {
 
   const bookID = book?.id
 
-  console.log(book)
+  // removed debug console.log to avoid duplicate logs
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteBook(id),

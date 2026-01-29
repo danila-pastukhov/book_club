@@ -80,7 +80,7 @@ const BookPagesPage = ({ username, isAuthenticated }) => {
 
   // Check if book is EPUB and redirect to EPUB reader
   if (book && book.content_type === 'epub') {
-    return <EpubReaderPage username={username} isAuthenticated={isAuthenticated} />
+    return <EpubReaderPage />
   }
 
   if (isPending) {

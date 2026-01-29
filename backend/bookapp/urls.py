@@ -63,6 +63,11 @@ urlpatterns = [
         name="user_to_reading_group_state_list",
     ),
     path(
+        "user_reading_groups/",
+        views.get_user_reading_groups,
+        name="get_user_reading_groups",
+    ),
+    path(
         "group/<int:pk>/confirm_user/<int:user_id>/",
         views.confirm_user_to_group,
         name="confirm_user_to_group",
