@@ -16,7 +16,6 @@ const Hero = ({ userInfo, authUsername, toggleModal }) => {
           {userInfo.profile_picture ? (
             <img
               src={resolveMediaUrl(userInfo.profile_picture)}
-              alt={userInfo.username}
               className="w-[90px] h-[90px] rounded-full object-cover"
             />
           ) : (
