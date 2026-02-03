@@ -1,4 +1,4 @@
-// THIS DETAILS THE SHOWING OF POSTS (.../posts/book-name)
+// THIS DETAILS THE SHOWING OF BOOKS (.../books/book-name)
 
 import Badge from '@/ui_components/Badge'
 import BookWriter from '@/ui_components/BookWriter'
@@ -10,7 +10,7 @@ import { resolveMediaUrl } from '@/api'
 import { HiPencilAlt } from 'react-icons/hi'
 import { MdDelete } from 'react-icons/md'
 import Modal from '@/ui_components/Modal'
-import CreatePostPage from './CreatePostPage'
+import CreateBookPage from './CreateBookPage'
 import { useState } from 'react'
 import { toast } from 'react-toastify'
 import { Link } from 'react-router-dom'
@@ -111,7 +111,7 @@ const DetailPage = ({ username, isAuthenticated }) => {
 
       {showModal && (
         <Modal toggleModal={toggleModal}>
-          <CreatePostPage book={book} />
+          <CreateBookPage book={book} />
         </Modal>
       )}
     </>

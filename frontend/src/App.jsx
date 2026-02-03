@@ -5,7 +5,7 @@ import HomePage from './pages/HomePage'
 import DetailPage from './pages/DetailPage'
 import ReadingGroupPage from './pages/ReadingGroupPage'
 import SignupPage from './pages/SignupPage'
-import CreatePostPage from './pages/CreatePostPage'
+import CreateBookPage from './pages/CreateBookPage'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './ui_components/ProtectedRoute'
 import ProfilePage from './pages/ProfilePage'
@@ -162,7 +162,7 @@ const App = () => {
             path="create_book"
             element={
               <ProtectedRoute>
-                <CreatePostPage isAuthenticated={isAuthenticated} />
+                <CreateBookPage isAuthenticated={isAuthenticated} />
               </ProtectedRoute>
             }
           />

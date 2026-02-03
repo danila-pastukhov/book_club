@@ -20,8 +20,9 @@ import { useNavigate } from "react-router-dom";
 import SmallSpinner from "@/ui_components/SmallSpinner";
 import SmallSpinnerText from "@/ui_components/SmallSpinnerText";
 import LoginPage from "./LoginPage";
+import { resolveMediaUrl } from "@/api";
 
-const CreatePostPage = ({ book, isAuthenticated }) => {
+const CreateBookPage = ({ book, isAuthenticated }) => {
   const { register, handleSubmit, formState, setValue } = useForm({
     defaultValues: book ? book : {},
   });
@@ -33,6 +34,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
   const [epubFileName, setEpubFileName] = useState("");
   const [visibility, setVisibility] = useState(book?.visibility || "public");
   const [selectedGroupId, setSelectedGroupId] = useState(book?.reading_group || "");
+  const [imagePreview, setImagePreview] = useState(null);
 
   const bookID = book?.id;
 
@@ -40,7 +42,11 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
   useEffect(() => {
     register("category", { required: "Категория книги обязательна" });
     register("visibility", { required: "Тип книги обязателен" });
-  }, [register]);
+    // Set default visibility value in form when creating new book
+    if (!book) {
+      setValue("visibility", "public");
+    }
+  }, [register, setValue, book]);
 
   const { data: userGroups } = useQuery({
     queryKey: ["userCreatedGroups"],
@@ -97,10 +103,9 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
       }
     }
 
-    if (data.featured_image && data.featured_image[0]) {
-      if (data.featured_image[0] != "/") {
-        formData.append("featured_image", data.featured_image[0]);
-      }
+    // Добавляем изображение только если выбран новый файл
+    if (data.featured_image && data.featured_image.length > 0 && data.featured_image[0] instanceof File) {
+      formData.append("featured_image", data.featured_image[0]);
     }
     if (book && bookID) {
       updateMutation.mutate({ data: formData, id: bookID });
@@ -113,6 +118,17 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
     const file = e.target.files?.[0];
     if (file) {
       setEpubFileName(file.name);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -272,7 +288,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
               <SelectItem value="Romance">Romance</SelectItem>
               <SelectItem value="Horror">Horror</SelectItem>
               <SelectItem value="Historical Fiction">Historical Fiction</SelectItem>
-              <SelectItem value="Adventure">Adventure</SelectItem>                            
+              <SelectItem value="Adventure">Adventure</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -343,7 +359,7 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
               <InputError error={errors.visibility.message} />
             )}
           </div>
-          
+
           {visibility === "group" && (
             <div className="w-full">
               <Label htmlFor="reading_group">Группа *</Label>
@@ -388,15 +404,48 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
           )}
 
       <div className="w-full">
-        <Label htmlFor="featured_image">Featured Image *</Label>
+        <Label htmlFor="featured_image">Изображение книги {!book && "*"}</Label>
+
+        {/* Отображение текущего изображения */}
+        {!imagePreview && book?.featured_image && (
+          <div className="mb-3">
+            <img
+              src={resolveMediaUrl(book.featured_image)}
+              alt="Current book cover"
+              className="h-40 w-40 rounded-lg object-cover border-2 border-[#141624] dark:border-[#3B3C4A]"
+            />
+            <p className="text-[12px] text-gray-500 mt-2">Текущее изображение</p>
+          </div>
+        )}
+
+        {/* Отображение превью нового изображения */}
+        {imagePreview && (
+          <div className="mb-3">
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="h-40 w-40 rounded-lg object-cover border-2 border-[#4B6BFB]"
+            />
+            <p className="text-[12px] text-blue-500 mt-2">Новое изображение</p>
+          </div>
+        )}
+
         <Input
           type="file"
           id="picture"
+          accept="image/*"
           {...register("featured_image", {
-            required: book ? false : "Book's featured image is required",
+            required: book ? false : "Изображение книги обязательно",
           })}
+          onChange={handleImageChange}
           className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[40px] w-full max-sm:w-[300px] max-sm:text-[14px]"
         />
+
+        {book && (
+          <p className="text-[12px] text-gray-500 mt-2">
+            Оставьте пустым, чтобы сохранить текущее изображение.
+          </p>
+        )}
 
         {errors?.featured_image?.message && (
           <InputError error={errors.featured_image.message} />
@@ -438,4 +487,4 @@ const CreatePostPage = ({ book, isAuthenticated }) => {
   );
 };
 
-export default CreatePostPage;
+export default CreateBookPage;
