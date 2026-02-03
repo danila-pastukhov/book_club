@@ -117,9 +117,9 @@ def book_list(request, amount):
             models.Q(visibility="public")
             | models.Q(visibility="personal", author=user)
             | models.Q(visibility="group", reading_group_id__in=user_group_ids)
-        )
+        ).select_related('author', 'reading_group')
     else:
-        books = Book.objects.filter(visibility="public")
+        books = Book.objects.filter(visibility="public").select_related('author', 'reading_group')
     paginator = AnyListPagination(amount=amount)
     paginated_books = paginator.paginate_queryset(books, request)
     serializer = BookSerializer(paginated_books, many=True)
@@ -132,7 +132,8 @@ def book_list(request, amount):
 
 @api_view(["GET"])
 def public_book_list(request, amount):
-    books = Book.objects.filter(visibility="public")
+    # Optimize: select_related for author and reading_group foreign keys
+    books = Book.objects.filter(visibility="public").select_related('author', 'reading_group')
     paginator = AnyListPagination(amount=amount)
     paginated_books = paginator.paginate_queryset(books, request)
     serializer = BookSerializer(paginated_books, many=True)
@@ -317,7 +318,8 @@ def get_group_reading_books(request, slug):
         .values_list("book_id", flat=True)
         .distinct()
     )
-    books = Book.objects.filter(id__in=book_ids)
+    # Optimize: select_related for author and reading_group
+    books = Book.objects.filter(id__in=book_ids).select_related('author', 'reading_group')
     serializer = BookSerializer(books, many=True)
     return Response(serializer.data)
 
@@ -355,7 +357,11 @@ def get_notification(request, id):
 
 @api_view(["GET"])
 def reading_group_list(request, amount):
-    reading_groups = ReadingGroup.objects.all()
+    # Optimize: select_related for creator, prefetch_related for users
+    reading_groups = ReadingGroup.objects.select_related('creator').prefetch_related(
+        'user',  # Prefetch the many-to-many relationship
+        'user__usertoreadinggroupstate_set'  # Prefetch the through table for status
+    ).all()
     paginator = AnyListPagination(amount=amount)
     paginated_reading_groups = paginator.paginate_queryset(reading_groups, request)
     serializer = ReadingGroupSerializer(paginated_reading_groups, many=True)
@@ -410,7 +416,10 @@ def get_user_created_groups(request):
 @api_view(["GET"])
 def notification_list(request, amount):
     user = request.user
-    notifications = Notification.objects.filter(directed_to=user)
+    # Optimize: select_related for foreign keys accessed by NotificationSerializer
+    notifications = Notification.objects.filter(directed_to=user).select_related(
+        'directed_to', 'related_to', 'related_group', 'related_quest', 'related_reward'
+    )
     paginator = AnyListPagination(amount=amount)
     paginated_notifications = paginator.paginate_queryset(notifications, request)
     serializer = NotificationSerializer(paginated_notifications, many=True)
@@ -756,11 +765,12 @@ def get_user_books(request, username):
     User = get_user_model()
     user = User.objects.get(username=username)
 
+    # Optimize: select_related for author (which is 'user' here) and reading_group
     if request.user.is_authenticated and request.user == user:
-        books = Book.objects.filter(author=user).select_related("reading_group")
+        books = Book.objects.filter(author=user).select_related("author", "reading_group")
     else:
         books = Book.objects.filter(author=user, visibility="public").select_related(
-            "reading_group"
+            "author", "reading_group"
         )
 
     serializer = BookSerializer(books, many=True)
@@ -1854,7 +1864,7 @@ def get_my_quests(request):
                 created_by=user,
             )
         )
-        .select_related("reward_template", "reading_group")
+        .select_related("created_by", "reward_template", "reading_group")
     )
 
     progress_map = {
