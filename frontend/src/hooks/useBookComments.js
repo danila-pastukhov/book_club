@@ -26,6 +26,9 @@ export const useBookComments = (slug, isAuthenticated = true) => {
     queryKey: ['userReadingGroups'],
     queryFn: getUserReadingGroups,
     enabled: isAuthenticated,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Set initial selected group from URL
@@ -62,6 +65,9 @@ export const useBookComments = (slug, isAuthenticated = true) => {
       isAuthenticated &&
       !!slug &&
       (commentType === 'personal' || !!readingGroupId),
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Callback to run after successful comment creation

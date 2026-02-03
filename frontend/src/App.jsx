@@ -31,6 +31,9 @@ const App = () => {
   const { data } = useQuery({
     queryKey: ['username'],
     queryFn: getUsername,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   useEffect(
@@ -75,10 +78,12 @@ const App = () => {
           <Route
             path="groups/:slug"
             element={
-              <ReadingGroupPage
-                username={username}
-                isAuthenticated={isAuthenticated}
-              />
+              <ProtectedRoute>
+                <ReadingGroupPage
+                  username={username}
+                  isAuthenticated={isAuthenticated}
+                />
+              </ProtectedRoute>
             }
           />
           <Route
@@ -133,10 +138,12 @@ const App = () => {
           <Route
             path="groups/:slug/quests"
             element={
-              <GroupQuestsPage
-                username={username}
-                isAuthenticated={isAuthenticated}
-              />
+              <ProtectedRoute>
+                <GroupQuestsPage
+                  username={username}
+                  isAuthenticated={isAuthenticated}
+                />
+              </ProtectedRoute>
             }
           />
           <Route
@@ -193,10 +200,12 @@ const App = () => {
         <Route
           path="/groups/:slug/board"
           element={
-            <PrizeBoardPage
-              username={username}
-              isAuthenticated={isAuthenticated}
-            />
+            <ProtectedRoute>
+              <PrizeBoardPage
+                username={username}
+                isAuthenticated={isAuthenticated}
+              />
+            </ProtectedRoute>
           }
         />
       </Routes>

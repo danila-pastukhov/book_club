@@ -41,6 +41,9 @@ const BookPagesPage = ({ isAuthenticated }) => {
   } = useQuery({
     queryKey: ['book', slug],
     queryFn: () => getBook(slug),
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   const { data: userData } = useQuery({
@@ -48,6 +51,9 @@ const BookPagesPage = ({ isAuthenticated }) => {
     queryFn: getUsername,
     enabled: isAuth,
     retry: false,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   const { data: readingProgressData } = useQuery({
@@ -55,6 +61,9 @@ const BookPagesPage = ({ isAuthenticated }) => {
     queryFn: () => getReadingProgress(slug),
     enabled: isAuth && !!book,
     retry: false,
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   const updateProgressMutation = useMutation({
@@ -205,14 +214,23 @@ const BookPagesPage = ({ isAuthenticated }) => {
     return result
   }, [currentText, comments])
 
+  const lastProgressRef = useRef({ page: null, total: null })
+
   useEffect(() => {
     if (!isAuth || !book?.content) return
+
+    const shouldSend =
+      lastProgressRef.current.page !== currentPage ||
+      lastProgressRef.current.total !== totalPages
+
+    if (!shouldSend) return
 
     const timer = setTimeout(() => {
       updateProgressMutation.mutate({
         current_page: currentPage,
         total_pages: totalPages,
       })
+      lastProgressRef.current = { page: currentPage, total: totalPages }
     }, 1000)
 
     return () => clearTimeout(timer)
