@@ -50,3 +50,5 @@ venv.bak/
 
 .env
 .env.production
+
+*.epub

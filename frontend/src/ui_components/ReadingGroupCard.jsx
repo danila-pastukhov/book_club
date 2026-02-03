@@ -2,7 +2,7 @@
 import ReadingGroupCardFooter from "./ReadingGroupCardFooter";
 import thumbnail from "../images/design_vii.jpg";
 import { Link } from "react-router-dom";
-import { BASE_URL } from "@/api";
+import { resolveMediaUrl } from "@/api";
 
 const ReadingGroupCard = ({reading_group}) => {
   return (
@@ -10,7 +10,7 @@ const ReadingGroupCard = ({reading_group}) => {
       <Link to={`/groups/${reading_group.slug}`}>
       <div className="w-full h-[200px] border rounded-md overflow-hidden">
         <img
-          src={`${BASE_URL}${reading_group.featured_image}`}  
+          src={resolveMediaUrl(reading_group.featured_image)}  
           className="w-full h-full object-cover rounded-lg"
         />
       </div>

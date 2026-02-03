@@ -2,7 +2,7 @@ import Badge from "./Badge";
 import CardFooter from "./CardFooter";
 import thumbnail from "../images/design_vii.jpg";
 import { Link } from "react-router-dom";
-import { BASE_URL } from "@/api";
+import { resolveMediaUrl } from "@/api";
 
 const BookCard = ({book}) => {
   return (
@@ -10,7 +10,7 @@ const BookCard = ({book}) => {
       <Link to={`/books/${book.slug}`}>
       <div className="w-full h-[200px] border rounded-md overflow-hidden">
         <img
-          src={`${BASE_URL}${book.featured_image}`}
+          src={resolveMediaUrl(book.featured_image)}
           className="w-full h-full object-cover rounded-lg"
         />
       </div>

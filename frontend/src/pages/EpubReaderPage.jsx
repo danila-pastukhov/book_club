@@ -1,33 +1,42 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ReactReader } from 'react-reader';
-import { useQuery } from '@tanstack/react-query';
-import { getBook, getBookChaptersList, getUsername } from '@/services/apiBook';
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { ReactReader } from 'react-reader'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getBook, getBookChaptersList, getUsername, getReadingProgress, updateReadingProgress } from '@/services/apiBook'
+import { resolveMediaUrl } from '@/api'
 
-import SmallSpinner from '@/ui_components/SmallSpinner';
-import CommentButton from '@/ui_components/CommentButton';
-import CommentForm from '@/ui_components/CommentForm';
-import CommentsSidebar from '@/ui_components/CommentsSidebar';
-import TableOfContents from '@/ui_components/TableOfContents';
+import SmallSpinner from '@/ui_components/SmallSpinner'
+import CommentButton from '@/ui_components/CommentButton'
+import CommentForm from '@/ui_components/CommentForm'
+import CommentsSidebar from '@/ui_components/CommentsSidebar'
+import TableOfContents from '@/ui_components/TableOfContents'
 
-import useBookComments from '@/hooks/useBookComments';
-import useEpubReader from '@/hooks/useEpubReader';
-import useTextSelection from '@/hooks/useTextSelection';
-import useHighlights from '@/hooks/useHighlights';
+import useBookComments from '@/hooks/useBookComments'
+import useEpubReader from '@/hooks/useEpubReader'
+import useTextSelection from '@/hooks/useTextSelection'
+import useHighlights from '@/hooks/useHighlights'
+import { useTheme } from '@/context/ThemeContext'
 
-import { toast } from 'react-toastify';
-import { IoHomeOutline } from 'react-icons/io5';
-import { FiChevronLeft, FiChevronRight, FiList } from 'react-icons/fi';
-import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
-import { BiMessageSquareDetail } from 'react-icons/bi';
+import { toast } from 'react-toastify'
+import { IoHomeOutline } from 'react-icons/io5'
+import { FiChevronLeft, FiChevronRight, FiList } from 'react-icons/fi'
+import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai'
+import { BiMessageSquareDetail } from 'react-icons/bi'
+import { FiCheckCircle } from 'react-icons/fi'
+import { HiMoon, HiSun } from 'react-icons/hi'
 
 const EpubReaderPage = () => {
-  const { slug } = useParams();
-  const [showCommentsSidebar, setShowCommentsSidebar] = useState(true);
-  const prevSidebarVisibilityRef = useRef(true);
+  const { slug } = useParams()
+  const [showCommentsSidebar, setShowCommentsSidebar] = useState(true)
+  const prevSidebarVisibilityRef = useRef(true)
+  const queryClient = useQueryClient()
+  const hasLoadedPosition = useRef(false)
+  
+  // Get theme context
+  const { darkMode, toggleDarkMode } = useTheme()
 
   // Check if user has a token (basic auth check)
-  const hasToken = !!localStorage.getItem('access');
+  const hasToken = !!localStorage.getItem('access')
 
   // Fetch book data
   const {
@@ -37,14 +46,14 @@ const EpubReaderPage = () => {
   } = useQuery({
     queryKey: ['book', slug],
     queryFn: () => getBook(slug),
-  });
+  })
 
   // Fetch chapters list
   const { data: chaptersData } = useQuery({
     queryKey: ['bookChapters', slug],
     queryFn: () => getBookChaptersList(slug),
     enabled: !!book && book.content_type === 'epub',
-  });
+  })
 
   // Fetch current user (only if has token)
   const { data: userData, error: userError } = useQuery({
@@ -52,19 +61,58 @@ const EpubReaderPage = () => {
     queryFn: getUsername,
     enabled: hasToken,
     retry: false,
-  });
+  })
+
+  // Fetch reading progress
+  const { data: readingProgressData, isLoading: progressLoading } = useQuery({
+    queryKey: ['readingProgress', slug],
+    queryFn: () => getReadingProgress(slug),
+    enabled: hasToken,
+    retry: false,
+  })
+
+  // Update reading progress mutation
+  const updateProgressMutation = useMutation({
+    mutationFn: (data) => updateReadingProgress(slug, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['readingProgress', slug])
+      queryClient.invalidateQueries(['myQuests'])
+    },
+    onError: (err) => {
+      console.error('Failed to update reading progress:', err)
+    },
+  })
+
+  // Debounced progress update
+  const progressUpdateTimerRef = useRef(null)
+  const updateProgress = useCallback((newLocation) => {
+    if (!hasToken) return
+
+    // Clear existing timer
+    if (progressUpdateTimerRef.current) {
+      clearTimeout(progressUpdateTimerRef.current)
+    }
+
+    // Set new timer to update after 2 seconds of no location change
+    progressUpdateTimerRef.current = setTimeout(() => {
+      updateProgressMutation.mutate({
+        current_cfi: newLocation,
+        progress_percent: 0, // Backend can calculate this if needed
+      })
+    }, 2000)
+  }, [hasToken, updateProgressMutation])
 
   // Show warning if user data fails to load (only if has token)
   useEffect(() => {
     if (hasToken && userError) {
-      toast.warn('Could not load user data. Some features may be limited.');
+      toast.warn('Could not load user data. Some features may be limited.')
     }
-  }, [hasToken, userError]);
+  }, [hasToken, userError])
 
   // Custom hooks
   const {
     location,
-    setLocation,
+    setLocation: setLocationOriginal,
     fontSize,
     showToc,
     rendition,
@@ -79,7 +127,62 @@ const EpubReaderPage = () => {
     handleGetRendition,
     handleTocChanged,
     setShowToc,
-  } = useEpubReader();
+  } = useEpubReader()
+
+  // Wrapper for setLocation that also updates progress
+  const setLocation = useCallback((newLocation) => {
+    if (import.meta.env.DEV) {
+      console.log('setLocation called with:', newLocation)
+    }
+    setLocationOriginal(newLocation)
+    updateProgress(newLocation)
+  }, [setLocationOriginal, updateProgress])
+
+  // Load saved reading position on mount (only once)
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('Checking saved position:', {
+        hasData: !!readingProgressData,
+        currentCfi: readingProgressData?.current_cfi,
+        hasLoaded: hasLoadedPosition.current,
+        hasRendition: !!rendition,
+        progressLoading,
+      })
+    }
+    
+    if (readingProgressData?.current_cfi && !hasLoadedPosition.current && rendition) {
+      if (import.meta.env.DEV) {
+        console.log('🚀 Loading saved position:', readingProgressData.current_cfi)
+        console.log('Rendition ready:', !!rendition)
+      }
+      
+      // Set location in state first
+      setLocationOriginal(readingProgressData.current_cfi)
+      
+      // Also explicitly display in rendition to ensure it loads
+      if (import.meta.env.DEV) {
+        console.log('Calling rendition.display with saved position')
+      }
+      
+      rendition
+        .display(readingProgressData.current_cfi)
+        .then(() => {
+          if (import.meta.env.DEV) {
+            console.log('✅ Successfully displayed saved position')
+          }
+        })
+        .catch((err) => {
+          if (import.meta.env.DEV) {
+            console.error('❌ Failed to display saved position:', err)
+          }
+          // Fallback to beginning if saved position is invalid
+          return rendition.display(0)
+        })
+      
+      hasLoadedPosition.current = true
+    }
+  }, [readingProgressData, setLocationOriginal, rendition, progressLoading])
+
 
   const {
     comments,
@@ -101,54 +204,61 @@ const EpubReaderPage = () => {
     handleCloseCommentForm,
     handleSelectGroup,
     handleCommentTypeChange,
-  } = useBookComments(slug, hasToken);
+  } = useBookComments(slug, hasToken, userData?.username)
 
   const {
     showCommentButton,
     commentButtonPosition,
     selectedTextData,
     clearSelection,
-  } = useTextSelection(rendition);
+  } = useTextSelection(rendition)
 
   // Handle highlight click - scroll to comment in sidebar
   const handleHighlightClick = useCallback(() => {
-    setShowCommentsSidebar(true);
-  }, []);
+    setShowCommentsSidebar(true)
+  }, [])
 
-  const { activeCommentId } = useHighlights(rendition, comments, handleHighlightClick);
+  const { activeCommentId } = useHighlights(
+    rendition,
+    comments,
+    handleHighlightClick,
+  )
 
   // Log highlights state for debugging
   useEffect(() => {
     if (import.meta.env.DEV) {
-      console.log('EpubReaderPage: Rendition ready, comments count:', comments?.length || 0);
+      console.log(
+        'EpubReaderPage: Rendition ready, comments count:',
+        comments?.length || 0,
+      )
     }
-  }, [rendition, comments]);
+  }, [rendition, comments])
 
   // Handle sidebar visibility changes - resize reader
   useEffect(() => {
     if (rendition && import.meta.env.DEV) {
-      console.log('Sidebar visibility changed, resizing reader');
+      console.log('Sidebar visibility changed, resizing reader')
     }
-    
+
     // Only resize if visibility actually changed (not on initial render)
     if (rendition && prevSidebarVisibilityRef.current !== showCommentsSidebar) {
       // Small delay to let CSS transitions complete
       setTimeout(() => {
-        rendition.resize();
-      }, 300);
+        rendition.resize()
+      }, 300)
     }
-    
+
     // Update ref for next comparison
-    prevSidebarVisibilityRef.current = showCommentsSidebar;
-  }, [showCommentsSidebar, rendition]);
+    prevSidebarVisibilityRef.current = showCommentsSidebar
+  }, [showCommentsSidebar, rendition])
 
   // Wrapper for submit that clears selection after success
   const onSubmitComment = useCallback(
     (formData) => {
-      handleSubmitComment(formData, selectedTextData, clearSelection);
+      handleSubmitComment(formData, selectedTextData, clearSelection)
     },
-    [handleSubmitComment, selectedTextData, clearSelection]
-  );
+    [handleSubmitComment, selectedTextData, clearSelection],
+  )
 
   // Loading state
   if (bookLoading) {
@@ -156,7 +266,7 @@ const EpubReaderPage = () => {
       <div className="flex justify-center items-center h-screen">
         <SmallSpinner />
       </div>
-    );
+    )
   }
 
   // Error states
@@ -165,7 +275,7 @@ const EpubReaderPage = () => {
       <div className="flex justify-center items-center h-screen">
         <p className="text-red-500">Error loading book</p>
       </div>
-    );
+    )
   }
 
   if (book.content_type !== 'epub') {
@@ -173,7 +283,7 @@ const EpubReaderPage = () => {
       <div className="flex justify-center items-center h-screen">
         <p className="text-red-500">This book is not in EPUB format</p>
       </div>
-    );
+    )
   }
 
   if (!book.epub_file) {
@@ -181,12 +291,10 @@ const EpubReaderPage = () => {
       <div className="flex justify-center items-center h-screen">
         <p className="text-red-500">EPUB file not found</p>
       </div>
-    );
+    )
   }
 
-  const epubUrl = book.epub_file.startsWith('http')
-    ? book.epub_file
-    : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${book.epub_file}`;
+  const epubUrl = resolveMediaUrl(book.epub_file)
 
   return (
     <div className="flex flex-col h-screen bg-[#FFFFFF] dark:bg-[#181A2A] text-[#181A2A] dark:text-[#FFFFFF]">
@@ -227,6 +335,15 @@ const EpubReaderPage = () => {
               </button>
             </div>
 
+            {/* Theme toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="flex items-center gap-2 px-3 py-2 border border-[#E8E8EA] dark:border-[#242535] rounded-lg bg-[#FFFFFF] dark:bg-[#1F2136] text-[#3B3C4A] dark:text-[#BABABF] hover:text-[#4B6BFB] dark:hover:text-[#4B6BFB] transition-colors"
+              title={darkMode ? "Светлая тема" : "Темная тема"}
+            >
+              {darkMode ? <HiSun size={20} /> : <HiMoon size={20} />}
+            </button>
+
             {/* Comments toggle */}
             <button
               onClick={() => setShowCommentsSidebar((prev) => !prev)}
@@ -254,12 +371,20 @@ const EpubReaderPage = () => {
               <FiList size={20} />
               <span className="max-sm:hidden">Chapters</span>
             </button>
+
+            {/* Completed indicator */}
+            {readingProgressData?.is_completed && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg border border-green-300 dark:border-green-700">
+                <FiCheckCircle size={20} />
+                <span className="max-sm:hidden font-medium">Прочитано</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Reader Container */}
-        <div className="flex-1 relative flex overflow-hidden">
+      <div className="flex-1 relative flex overflow-hidden">
         {/* Reader */}
         <div className="flex-1 overflow-hidden min-h-0">
           <ReactReader
@@ -320,16 +445,22 @@ const EpubReaderPage = () => {
           <button
             onClick={goToPrevPage}
             className="bg-[#FFFFFF] dark:bg-[#1F2136] border border-[#E8E8EA] dark:border-[#242535] shadow-md rounded-full p-3 hover:bg-[#F6F6F7] dark:hover:bg-[#242535] transition-colors"
-            title="Previous page"
+            title="Предыдущая страница"
           >
-            <FiChevronLeft size={24} className="text-[#3B3C4A] dark:text-[#BABABF]" />
+            <FiChevronLeft
+              size={24}
+              className="text-[#3B3C4A] dark:text-[#BABABF]"
+            />
           </button>
           <button
             onClick={goToNextPage}
             className="bg-[#FFFFFF] dark:bg-[#1F2136] border border-[#E8E8EA] dark:border-[#242535] shadow-md rounded-full p-3 hover:bg-[#F6F6F7] dark:hover:bg-[#242535] transition-colors"
-            title="Next page"
+            title="Следующая страница"
           >
-            <FiChevronRight size={24} className="text-[#3B3C4A] dark:text-[#BABABF]" />
+            <FiChevronRight
+              size={24}
+              className="text-[#3B3C4A] dark:text-[#BABABF]"
+            />
           </button>
         </div>
       </div>
@@ -338,7 +469,7 @@ const EpubReaderPage = () => {
       {chaptersData && (
         <div className="px-6 py-2 bg-[#F6F6F7] dark:bg-[#141624] border-t border-[#E8E8EA] dark:border-[#242535]">
           <p className="text-sm text-[#3B3C4A] dark:text-[#BABABF] text-center">
-            {chaptersData.chapters?.length || 0} chapters available
+            {chaptersData.chapters?.length || 0} глав(ы)
           </p>
         </div>
       )}
@@ -365,7 +496,7 @@ const EpubReaderPage = () => {
         />
       )}
     </div>
-  );
-};
+  )
+}
 
-export default EpubReaderPage;
+export default EpubReaderPage

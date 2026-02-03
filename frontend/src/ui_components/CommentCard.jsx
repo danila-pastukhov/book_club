@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BiEdit, BiTrash } from 'react-icons/bi';
 import { BsQuote } from 'react-icons/bs';
 import { IoChevronDown, IoChevronUp, IoChatbubbleOutline } from 'react-icons/io5';
-import { BASE_URL } from "@/api";
+import { resolveMediaUrl } from "@/api";
 import useCommentReplies from '@/hooks/useCommentReplies';
 import CommentReplies from './CommentReplies';
 
@@ -80,7 +80,7 @@ const CommentCard = ({
           {/* User Avatar */}
           {comment.user.profile_picture ? (
             <img
-              src={`${BASE_URL}${comment.user.profile_picture}`}
+              src={resolveMediaUrl(comment.user.profile_picture)}
               alt={comment.user.username}
               className="w-8 h-8 rounded-full"
             />
