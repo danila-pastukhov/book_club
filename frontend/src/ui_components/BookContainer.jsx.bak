@@ -1,7 +1,7 @@
 import BookCard from "./BookCard"
 import Spinner from "./Spinner"
 
-const BookContainer = ({isPending, books=[], title="", showVisibilityLabels=false}) => {
+const BookContainer = ({isPending, books=[], title=""}) => {
 
   if(isPending){
     return <Spinner />
@@ -16,13 +16,7 @@ const BookContainer = ({isPending, books=[], title="", showVisibilityLabels=fals
     )}
 
     <div className="flex items-center gap-6 justify-center flex-wrap">
-      {books.map((book) => (
-        <BookCard
-          key={book.id}
-          book={book}
-          showVisibilityLabels={showVisibilityLabels}
-        />
-      ))}
+      {books.map((book) => <BookCard key={book.id} book={book} />)}
       
     </div>
   </section>
