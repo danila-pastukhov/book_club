@@ -101,13 +101,13 @@ const BookPagesPage = ({ isAuthenticated }) => {
     }
   }, [readingProgressData])
 
-  const { totalPages, currentText } = useMemo(() => {
-    if (!book?.content) {
-      return { totalPages: 1, currentText: '' }
-    }
+  const linesPerPage = 18
+  const symbolsPerLine = 75
 
-    const linesPerPage = 18
-    const symbolsPerLine = 75
+  const { totalPages, currentText, wrappedText, wrappedLines } = useMemo(() => {
+    if (!book?.content) {
+      return { totalPages: 1, currentText: '', wrappedText: '', wrappedLines: [] }
+    }
 
     const wrappedLines = book.content.split('\n').flatMap((paragraph) => {
       if (!paragraph.trim()) return ['']
@@ -132,9 +132,13 @@ const BookPagesPage = ({ isAuthenticated }) => {
       currentPage * linesPerPage,
     )
 
+    const wrappedText = wrappedLines.join('\n').replace(/\n{2,}/g, '\n')
+
     return {
       totalPages: pages,
       currentText: pageLines.join('\n').replace(/\n{2,}/g, '\n'),
+      wrappedText,
+      wrappedLines,
     }
   }, [book?.content, currentPage])
 
@@ -280,6 +284,35 @@ const BookPagesPage = ({ isAuthenticated }) => {
     [handleSubmitComment, selectedTextData, clearSelection],
   )
 
+  const handleJumpToText = useCallback(
+    (targetText) => {
+      if (!targetText || !wrappedText || wrappedLines.length === 0) return
+
+      const index = wrappedText.indexOf(targetText)
+      if (index === -1) return
+
+      let runningOffset = 0
+      let lineIndex = 0
+      for (let i = 0; i < wrappedLines.length; i += 1) {
+        const lineLength = wrappedLines[i].length
+        const lineEnd = runningOffset + lineLength
+        if (index <= lineEnd) {
+          lineIndex = i
+          break
+        }
+        runningOffset = lineEnd + 1
+      }
+
+      const targetPage = Math.min(
+        totalPages,
+        Math.max(1, Math.floor(lineIndex / linesPerPage) + 1),
+      )
+
+      setCurrentPage(targetPage)
+    },
+    [wrappedText, wrappedLines, totalPages, linesPerPage],
+  )
+
   if (bookLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -422,7 +455,7 @@ const BookPagesPage = ({ isAuthenticated }) => {
             onClose={() => setShowCommentsSidebar(false)}
             onEdit={handleEditComment}
             onDelete={handleDeleteComment}
-            onJumpTo={() => {}}
+            onJumpTo={handleJumpToText}
             activeCommentId={null}
             commentType={commentType}
             onCommentTypeChange={handleCommentTypeChange}
