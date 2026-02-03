@@ -59,6 +59,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "bookapp.middleware.SecurityHeadersMiddleware",  # Custom XSS protection headers
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -226,6 +227,17 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5175",
     "http://localhost:3000",
 ]
+
+# XSS Protection Settings (applies to both development and production)
+# Prevent clickjacking attacks
+X_FRAME_OPTIONS = 'DENY'
+
+# Referrer policy - don't send full URL in referrer
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Additional XSS protection for development
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Additional security settings for production
 if not DEBUG:
