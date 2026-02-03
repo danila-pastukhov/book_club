@@ -5,7 +5,7 @@ from contextlib import contextmanager
 
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -92,11 +92,18 @@ def local_epub_path(epub_field_file):
 
 
 class AnyListPagination(PageNumberPagination):
+    """
+    Custom pagination class with configurable page size.
+    Enforces a maximum limit of 100 items per page to prevent abuse.
+    """
+    max_page_size = 100  # Maximum items per page
+
     def __init__(self, amount):
-        self.page_size = amount
+        # Enforce maximum page size limit
+        self.page_size = min(int(amount), self.max_page_size)
+        super().__init__()
 
 
-# REM/CHANGE needs proper book grabbing
 @api_view(["GET"])
 def book_list(request, amount):
     user = request.user if request.user.is_authenticated else None
@@ -141,7 +148,7 @@ def public_book_list(request, amount):
 
 @api_view(["GET"])
 def get_book(request, slug):
-    book = Book.objects.get(slug=slug)
+    book = get_object_or_404(Book, slug=slug)
 
     if book.visibility == "personal":
         if not request.user.is_authenticated or book.author != request.user:
@@ -285,7 +292,7 @@ def get_book_chapters_list(request, slug):
 
 @api_view(["GET"])
 def get_reading_group(request, slug):
-    reading_group = ReadingGroup.objects.get(slug=slug)
+    reading_group = get_object_or_404(ReadingGroup, slug=slug)
     serializer = ReadingGroupSerializer(reading_group)
     return Response(serializer.data)
 
@@ -293,7 +300,7 @@ def get_reading_group(request, slug):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_group_reading_books(request, slug):
-    reading_group = ReadingGroup.objects.get(slug=slug)
+    reading_group = get_object_or_404(ReadingGroup, slug=slug)
     user = request.user
 
     is_member = UserToReadingGroupState.objects.filter(
@@ -318,7 +325,7 @@ def get_group_reading_books(request, slug):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_group_posted_books(request, slug):
-    reading_group = ReadingGroup.objects.get(slug=slug)
+    reading_group = get_object_or_404(ReadingGroup, slug=slug)
     user = request.user
 
     is_member = UserToReadingGroupState.objects.filter(
@@ -341,7 +348,7 @@ def get_group_posted_books(request, slug):
 
 @api_view(["GET"])
 def get_notification(request, id):
-    notification = Notification.objects.get(id=id)
+    notification = get_object_or_404(Notification, id=id)
     serializer = NotificationSerializer(notification)
     return Response(serializer.data)
 
@@ -408,15 +415,6 @@ def notification_list(request, amount):
     paginated_notifications = paginator.paginate_queryset(notifications, request)
     serializer = NotificationSerializer(paginated_notifications, many=True)
     return paginator.get_paginated_response(serializer.data)
-
-
-@api_view(["POST"])
-def register_user(request):
-    serializer = UserRegistrationSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
@@ -526,14 +524,14 @@ def create_book(request):
 @permission_classes([IsAuthenticated])
 def create_notification(request):
     user = request.user
-    directed_to_id = request.data.get("directed_to_id")  # HERE FFS
+    directed_to_id = request.data.get("directed_to_id")
     if directed_to_id:
-        directed_user = CustomUser.objects.get(id=directed_to_id)
+        directed_user = get_object_or_404(CustomUser, id=directed_to_id)
     else:
         directed_user = None
     related_group_id = request.data.get("related_group_id")
     if related_group_id:
-        related_group = ReadingGroup.objects.get(id=related_group_id)
+        related_group = get_object_or_404(ReadingGroup, id=related_group_id)
     serializer = NotificationSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(
@@ -561,7 +559,7 @@ def create_reading_group(request):
 @permission_classes([IsAuthenticated])
 def update_book(request, pk):
     user = request.user
-    book = Book.objects.get(id=pk)
+    book = get_object_or_404(Book, id=pk)
     if book.author != user:
         return Response(
             {"error": "You are not the author of this book"},
@@ -638,7 +636,7 @@ def update_book(request, pk):
 @permission_classes([IsAuthenticated])
 def update_reading_group(request, pk):
     user = request.user
-    reading_group = ReadingGroup.objects.get(id=pk)
+    reading_group = get_object_or_404(ReadingGroup, id=pk)
     if reading_group.creator != user:
         return Response(
             {"error": "You are not the creator of this group"},
@@ -655,7 +653,7 @@ def update_reading_group(request, pk):
 @permission_classes([IsAuthenticated])
 def add_user_to_group(request, pk):
     user = request.user
-    reading_group = ReadingGroup.objects.get(id=pk)
+    reading_group = get_object_or_404(ReadingGroup, id=pk)
     reading_group.user.add(user, through_defaults={"in_reading_group": False})
     serializer = ReadingGroupSerializer(reading_group)
     return Response(serializer.data)
@@ -665,8 +663,8 @@ def add_user_to_group(request, pk):
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def confirm_user_to_group(request, pk, user_id):
-    reading_group = ReadingGroup.objects.get(id=pk)
-    user = CustomUser.objects.get(id=user_id)
+    reading_group = get_object_or_404(ReadingGroup, id=pk)
+    user = get_object_or_404(CustomUser, id=user_id)
     UserToReadingGroupState.objects.filter(
         reading_group=reading_group, user=user  # HERE
     ).update(in_reading_group=True)
@@ -678,7 +676,7 @@ def confirm_user_to_group(request, pk, user_id):
 @permission_classes([IsAuthenticated])
 def remove_user_from_group(request, pk):
     user = request.user
-    reading_group = ReadingGroup.objects.get(id=pk)
+    reading_group = get_object_or_404(ReadingGroup, id=pk)
     reading_group.user.remove(user)
     serializer = ReadingGroupSerializer(reading_group)
     return Response(serializer.data)
@@ -687,7 +685,7 @@ def remove_user_from_group(request, pk):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def delete_book(request, pk):
-    book = Book.objects.get(id=pk)
+    book = get_object_or_404(Book, id=pk)
     user = request.user
     if book.author != user:
         return Response(
@@ -703,7 +701,7 @@ def delete_book(request, pk):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def delete_notification(request, pk):
-    notification = Notification.objects.get(id=pk)
+    notification = get_object_or_404(Notification, id=pk)
     user = request.user
     if notification.directed_to != user:
         logger.info(f"Correct user: {notification.directed_to}; Recieved user: {user}")
@@ -724,7 +722,7 @@ def delete_notification(request, pk):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def delete_reading_group(request, pk):
-    reading_group = ReadingGroup.objects.get(id=pk)
+    reading_group = get_object_or_404(ReadingGroup, id=pk)
     user = request.user
     if reading_group.creator != user:
         return Response(
@@ -1435,7 +1433,7 @@ def get_group_quests(request, slug):
     try:
         from django.utils import timezone
 
-        reading_group = ReadingGroup.objects.get(slug=slug)
+        reading_group = get_object_or_404(ReadingGroup, slug=slug)
         user = request.user
 
         # Check if user is a member

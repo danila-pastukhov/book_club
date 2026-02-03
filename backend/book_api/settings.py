@@ -22,12 +22,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default="django-insecure-+xfdqmroulmm-cn(cmbt3)oqu36i3z$mc&fp5$ug9@b)rr8lk+")
+# No default provided - must be set in environment variables
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+# Default is False for security - explicitly enable for development
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ["*"]
+# SECURITY WARNING: Configure allowed hosts for production
+# Default to localhost for development, override with comma-separated list in production
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+
+# Validate SECRET_KEY in production
+if not DEBUG:
+    if not SECRET_KEY or SECRET_KEY.startswith('django-insecure'):
+        raise ValueError(
+            "SECRET_KEY must be set to a secure value in production. "
+            "Generate a new key with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
+        )
 
 
 # Application definition
@@ -198,6 +210,15 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
 }
 
+# Cache configuration for rate limiting
+# In production, use Redis or Memcached for better performance
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'rate-limit-cache',
+    }
+}
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -205,6 +226,23 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5175",
     "http://localhost:3000",
 ]
+
+# Additional security settings for production
+if not DEBUG:
+    # HTTPS/SSL settings
+    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Update CORS for production
+    cors_origins = config('CORS_ALLOWED_ORIGINS', default='')
+    if cors_origins:
+        CORS_ALLOWED_ORIGINS = cors_origins.split(',')
 
 # Logging configuration
 LOG_FILE_PATH = config('LOG_FILE_PATH', default='bookapp/app.log')
