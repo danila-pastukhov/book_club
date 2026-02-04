@@ -65,13 +65,31 @@ def update_reading_progress(request, slug):
             progress, data=request.data, partial=True
         )
         if serializer.is_valid():
+
+            logging.info(f"Updating reading progress for user {user.id} on book {book.slug} with data: {request.data}")
             saved_progress = serializer.save()
 
-            # Auto-calculate progress_percent if current_page and total_pages are provided
-            if saved_progress.total_pages > 0:
-                calculated_percent = (
-                    saved_progress.current_page / saved_progress.total_pages
-                ) * 100
+            # Calculate progress_percent based on book content type
+            calculated_percent = None
+
+            if book.content_type == "plaintext" and book.content:
+                # For TXT books: calculate from character_offset / total_characters
+                total_chars = len(book.content)
+                if total_chars > 0 and saved_progress.character_offset >= 0:
+                    calculated_percent = (
+                        saved_progress.character_offset / total_chars
+                    ) * 100
+            elif book.content_type == "epub":
+                # For EPUB books: use progress_percent from request (sent by frontend)
+                request_percent = request.data.get("progress_percent")
+                if request_percent is not None:
+                    try:
+                        calculated_percent = float(request_percent)
+                    except (TypeError, ValueError):
+                        pass
+
+            # Update progress_percent if calculated
+            if calculated_percent is not None:
                 saved_progress.progress_percent = min(calculated_percent, 100)
 
                 # Auto-complete if progress >= 95%

@@ -31,6 +31,8 @@ const EpubReaderPage = () => {
   const prevSidebarVisibilityRef = useRef(true)
   const queryClient = useQueryClient()
   const hasLoadedPosition = useRef(false)
+  const currentPercentageRef = useRef(0)
+  const locationsReadyRef = useRef(false)
   
   // Get theme context
   const { darkMode, toggleDarkMode } = useTheme()
@@ -95,10 +97,13 @@ const EpubReaderPage = () => {
 
     // Set new timer to update after 2 seconds of no location change
     progressUpdateTimerRef.current = setTimeout(() => {
-      updateProgressMutation.mutate({
-        current_cfi: newLocation,
-        progress_percent: 0, // Backend can calculate this if needed
-      })
+      // Only include progress_percent if locations are ready
+      const data = { current_cfi: newLocation }
+      if (locationsReadyRef.current) {
+        data.progress_percent = currentPercentageRef.current
+      }
+
+      updateProgressMutation.mutate(data)
     }, 2000)
   }, [hasToken, updateProgressMutation])
 
@@ -128,6 +133,66 @@ const EpubReaderPage = () => {
     handleTocChanged,
     setShowToc,
   } = useEpubReader()
+
+  // Generate locations and track progress percentage from epub.js
+  useEffect(() => {
+    if (!rendition) return
+
+    const book = rendition.book
+    let isSubscribed = true
+
+    const handleRelocated = (location) => {
+      // Only update percentage if locations have been generated
+      if (!locationsReadyRef.current) {
+        if (import.meta.env.DEV) {
+          console.log('EPUB relocated event ignored - locations not ready yet')
+        }
+        return
+      }
+
+      // epub.js provides percentage as a decimal (0.0 to 1.0)
+      const percentage = (location?.end?.percentage ?? location?.start?.percentage ?? 0) * 100
+      currentPercentageRef.current = Math.min(percentage, 100)
+
+      if (import.meta.env.DEV) {
+        console.log('EPUB progress percentage:', currentPercentageRef.current.toFixed(1) + '%')
+      }
+    }
+
+    // Generate locations to enable percentage tracking
+    // The number (1600) is characters per location - higher = faster generation, lower = more precision
+    book.locations.generate(1600).then(() => {
+      if (!isSubscribed) return
+
+      locationsReadyRef.current = true
+
+      if (import.meta.env.DEV) {
+        console.log('EPUB locations generated, total:', book.locations.total)
+      }
+
+      // Get current percentage now that locations are ready
+      const currentLocation = rendition.currentLocation()
+      if (currentLocation) {
+        const percentage = (currentLocation?.end?.percentage ?? currentLocation?.start?.percentage ?? 0) * 100
+        currentPercentageRef.current = Math.min(percentage, 100)
+
+        if (import.meta.env.DEV) {
+          console.log('Initial EPUB progress percentage:', currentPercentageRef.current.toFixed(1) + '%')
+        }
+      }
+    }).catch((err) => {
+      if (import.meta.env.DEV) {
+        console.error('Failed to generate EPUB locations:', err)
+      }
+    })
+
+    rendition.on('relocated', handleRelocated)
+    return () => {
+      isSubscribed = false
+      locationsReadyRef.current = false
+      rendition.off('relocated', handleRelocated)
+    }
+  }, [rendition])
 
   // Wrapper for setLocation that also updates progress
   const setLocation = useCallback((newLocation) => {

@@ -275,33 +275,23 @@ const BookPagesPage = ({ isAuthenticated }) => {
     return result
   }, [currentText, comments])
 
-  const lastProgressRef = useRef({ charOffset: null, page: null, total: null })
+  const lastProgressRef = useRef({ charOffset: null })
 
   useEffect(() => {
     if (!isAuth || !book?.content) return
 
-    const shouldSend =
-      lastProgressRef.current.charOffset !== characterOffset ||
-      lastProgressRef.current.page !== currentPage ||
-      lastProgressRef.current.total !== totalPages
-
-    if (!shouldSend) return
+    // Only send when character offset changes
+    if (lastProgressRef.current.charOffset === characterOffset) return
 
     const timer = setTimeout(() => {
       updateProgressMutation.mutate({
-        current_page: currentPage,
-        total_pages: totalPages,
         character_offset: characterOffset,
       })
-      lastProgressRef.current = {
-        charOffset: characterOffset,
-        page: currentPage,
-        total: totalPages,
-      }
+      lastProgressRef.current = { charOffset: characterOffset }
     }, 2000) // Increased debounce to 2 seconds like EpubReaderPage
 
     return () => clearTimeout(timer)
-  }, [currentPage, totalPages, characterOffset, book?.content, isAuth, updateProgressMutation])
+  }, [characterOffset, book?.content, isAuth, updateProgressMutation])
 
   const clearSelection = useCallback(() => {
     setSelectedTextData(null)
