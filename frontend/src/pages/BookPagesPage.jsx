@@ -20,6 +20,73 @@ import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai'
 import { BiMessageSquareDetail } from 'react-icons/bi'
 import { FiCheckCircle, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
+// Normalize whitespace: collapse multiple spaces/newlines to single space
+const normalizeWhitespace = (str) => str.replace(/\s+/g, ' ').trim()
+
+/**
+ * Find text fragment in content with whitespace normalization fallback.
+ * Returns { start, end } indices in the original content, or null if not found.
+ */
+const findTextInContent = (content, targetText, startFrom = 0) => {
+  if (!content || !targetText) return null
+
+  // Try exact match first
+  const exactIndex = content.indexOf(targetText, startFrom)
+  if (exactIndex !== -1) {
+    return { start: exactIndex, end: exactIndex + targetText.length }
+  }
+
+  // Try with normalized whitespace
+  const normalizedTarget = normalizeWhitespace(targetText)
+  if (!normalizedTarget) return null
+
+  // Build a mapping from normalized positions to original positions
+  const originalPositions = []
+  let inWhitespace = false
+
+  for (let i = startFrom; i < content.length; i++) {
+    const char = content[i]
+    const isWs = /\s/.test(char)
+
+    if (isWs) {
+      if (!inWhitespace) {
+        originalPositions.push(i) // Position of the whitespace sequence (becomes single space)
+        inWhitespace = true
+      }
+    } else {
+      originalPositions.push(i)
+      inWhitespace = false
+    }
+  }
+
+  // Create normalized content starting from startFrom
+  const normalizedContent = normalizeWhitespace(content.slice(startFrom))
+  const normalizedIndex = normalizedContent.indexOf(normalizedTarget)
+
+  if (normalizedIndex === -1) return null
+
+  // Map normalized indices back to original positions
+  const originalStart = originalPositions[normalizedIndex]
+  const normalizedEnd = normalizedIndex + normalizedTarget.length
+  
+  // Find the original end position
+  // We need to find where the last character of the match is in the original content
+  let originalEnd
+  if (normalizedEnd >= originalPositions.length) {
+    originalEnd = content.length
+  } else {
+    originalEnd = originalPositions[normalizedEnd]
+  }
+
+  // Adjust end to include the full last character sequence
+  // (in case the match ends with collapsed whitespace)
+  if (originalEnd > originalStart) {
+    return { start: originalStart, end: originalEnd }
+  }
+
+  return null
+}
+
 const BookPagesPage = ({ isAuthenticated }) => {
   const { slug } = useParams()
   const queryClient = useQueryClient()
@@ -158,17 +225,15 @@ const BookPagesPage = ({ isAuthenticated }) => {
       const selected = comment?.selected_text
       if (!selected) return
 
-      let startIndex = 0
-      while (startIndex < currentText.length) {
-        const idx = currentText.indexOf(selected, startIndex)
-        if (idx === -1) break
+      // Use findTextInContent with normalization fallback
+      const match = findTextInContent(currentText, selected, 0)
+      if (match) {
         matches.push({
-          start: idx,
-          end: idx + selected.length,
+          start: match.start,
+          end: match.end,
           color: comment.highlight_color || '#FFFF00',
           id: comment.id,
         })
-        startIndex = idx + selected.length
       }
     })
 
@@ -286,47 +351,10 @@ const BookPagesPage = ({ isAuthenticated }) => {
     (targetText) => {
       if (!targetText || !book?.content) return
 
-      // Normalize whitespace: collapse multiple spaces/newlines to single space
-      const normalize = (str) => str.replace(/\s+/g, ' ').trim()
-
-      // Try exact match first in original content
-      let index = book.content.indexOf(targetText)
-
-      // If not found, try with normalized whitespace
-      // This handles cases where line breaks differ due to dynamic pagination
-      if (index === -1) {
-        const normalizedTarget = normalize(targetText)
-        const normalizedContent = normalize(book.content)
-        const normalizedIndex = normalizedContent.indexOf(normalizedTarget)
-
-        if (normalizedIndex === -1) return
-
-        // Map normalized index back to approximate original index
-        // by counting characters while collapsing whitespace
-        let originalIndex = 0
-        let normPos = 0
-        let inWhitespace = false
-
-        while (originalIndex < book.content.length && normPos < normalizedIndex) {
-          const char = book.content[originalIndex]
-          const isWs = /\s/.test(char)
-
-          if (isWs) {
-            if (!inWhitespace) {
-              normPos++ // Count whitespace sequence as single space
-              inWhitespace = true
-            }
-          } else {
-            normPos++
-            inWhitespace = false
-          }
-          originalIndex++
-        }
-        index = originalIndex
+      const match = findTextInContent(book.content, targetText, 0)
+      if (match) {
+        restorePosition(match.start)
       }
-
-      // Use restorePosition which handles offset-to-page mapping
-      restorePosition(index)
     },
     [book?.content, restorePosition],
   )
