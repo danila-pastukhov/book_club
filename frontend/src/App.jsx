@@ -32,6 +32,7 @@ const App = () => {
     queryKey: ['username'],
     queryFn: getUsername,
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })

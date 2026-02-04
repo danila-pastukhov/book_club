@@ -27,6 +27,7 @@ export const useBookComments = (slug, isAuthenticated = true) => {
     queryFn: getUserReadingGroups,
     enabled: isAuthenticated,
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })
@@ -66,6 +67,7 @@ export const useBookComments = (slug, isAuthenticated = true) => {
       !!slug &&
       (commentType === 'personal' || !!readingGroupId),
     staleTime: 1000 * 60,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })

@@ -110,6 +110,7 @@ const BookPagesPage = ({ isAuthenticated }) => {
     queryKey: ['book', slug],
     queryFn: () => getBook(slug),
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })
@@ -120,6 +121,7 @@ const BookPagesPage = ({ isAuthenticated }) => {
     enabled: isAuth,
     retry: false,
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })
@@ -130,15 +132,20 @@ const BookPagesPage = ({ isAuthenticated }) => {
     enabled: isAuth && !!book,
     retry: false,
     staleTime: 1000 * 60,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })
 
   const updateProgressMutation = useMutation({
     mutationFn: (data) => updateReadingProgress(slug, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['readingProgress', slug])
-      queryClient.invalidateQueries(['myQuests'])
+    onSuccess: (responseData) => {
+      // Update the cache directly instead of refetching to avoid navigation resets
+      if (responseData) {
+        queryClient.setQueryData(['readingProgress', slug], responseData)
+      }
+      // Note: Quest progress is only affected when book is marked complete,
+      // not on every page turn, so we don't invalidate quests here
     },
   })
 

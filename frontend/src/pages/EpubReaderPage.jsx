@@ -34,6 +34,9 @@ const EpubReaderPage = () => {
   const currentPercentageRef = useRef(0)
   const locationsReadyRef = useRef(false)
   
+  // Flag to ignore locationChanged events immediately after restoring position
+  const ignoreLocationChangeUntilRef = useRef(0)
+  
   // Get theme context
   const { darkMode, toggleDarkMode } = useTheme()
 
@@ -48,6 +51,10 @@ const EpubReaderPage = () => {
   } = useQuery({
     queryKey: ['book', slug],
     queryFn: () => getBook(slug),
+    staleTime: 1000 * 60 * 5,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Fetch chapters list
@@ -55,6 +62,10 @@ const EpubReaderPage = () => {
     queryKey: ['bookChapters', slug],
     queryFn: () => getBookChaptersList(slug),
     enabled: !!book && book.content_type === 'epub',
+    staleTime: 1000 * 60 * 5,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Fetch current user (only if has token)
@@ -63,6 +74,10 @@ const EpubReaderPage = () => {
     queryFn: getUsername,
     enabled: hasToken,
     retry: false,
+    staleTime: 1000 * 60 * 5,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Fetch reading progress
@@ -71,14 +86,23 @@ const EpubReaderPage = () => {
     queryFn: () => getReadingProgress(slug),
     enabled: hasToken,
     retry: false,
+    staleTime: 1000 * 60,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Update reading progress mutation
   const updateProgressMutation = useMutation({
     mutationFn: (data) => updateReadingProgress(slug, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['readingProgress', slug])
-      queryClient.invalidateQueries(['myQuests'])
+    onSuccess: (responseData) => {
+      // Update the cache directly instead of refetching to avoid navigation resets
+      // The server returns the updated reading progress, so we can use it
+      if (responseData) {
+        queryClient.setQueryData(['readingProgress', slug], responseData)
+      }
+      // Note: Quest progress is only affected when book is marked complete,
+      // not on every page turn, so we don't invalidate quests here
     },
     onError: (err) => {
       console.error('Failed to update reading progress:', err)
@@ -194,17 +218,70 @@ const EpubReaderPage = () => {
     }
   }, [rendition])
 
+  // Store the most precise CFI from relocated event for saving progress
+  const preciseCfiRef = useRef(null)
+
+  // Listen to relocated event to get precise CFI for saving
+  useEffect(() => {
+    if (!rendition) return
+
+    const handleRelocatedForSave = (location) => {
+      // Skip if we're in the process of restoring saved position
+      if (ignoreLocationChangeUntilRef.current > Date.now()) {
+        if (import.meta.env.DEV) {
+          console.log('⏳ Ignoring relocated event for CFI save (restoring position)')
+        }
+        return
+      }
+      
+      // Get the most precise CFI available - prefer start.cfi which includes character offset
+      const preciseCfi = location?.start?.cfi
+      if (preciseCfi) {
+        preciseCfiRef.current = preciseCfi
+        if (import.meta.env.DEV) {
+          console.log('Precise CFI captured from relocated:', preciseCfi)
+        }
+      }
+    }
+
+    rendition.on('relocated', handleRelocatedForSave)
+    return () => {
+      rendition.off('relocated', handleRelocatedForSave)
+    }
+  }, [rendition])
+
   // Wrapper for setLocation that also updates progress
   const setLocation = useCallback((newLocation) => {
+    // Ignore locationChanged events for a short time after restoring saved position
+    // This prevents epub.js from resetting to chapter start
+    if (ignoreLocationChangeUntilRef.current > Date.now()) {
+      if (import.meta.env.DEV) {
+        console.log('⏳ Ignoring locationChanged event (restoring position):', newLocation)
+      }
+      return
+    }
+    
     if (import.meta.env.DEV) {
       console.log('setLocation called with:', newLocation)
     }
     setLocationOriginal(newLocation)
-    updateProgress(newLocation)
+    
+    // Use the precise CFI from relocated event if available, otherwise fall back to newLocation
+    // The precise CFI includes exact character position within the element
+    const cfiToSave = preciseCfiRef.current || newLocation
+    if (import.meta.env.DEV && preciseCfiRef.current && preciseCfiRef.current !== newLocation) {
+      console.log('Using precise CFI for save:', cfiToSave)
+    }
+    updateProgress(cfiToSave)
   }, [setLocationOriginal, updateProgress])
 
   // Load saved reading position on mount (only once)
   useEffect(() => {
+    // Skip if we've already loaded the position
+    if (hasLoadedPosition.current) {
+      return
+    }
+
     if (import.meta.env.DEV) {
       console.log('Checking saved position:', {
         hasData: !!readingProgressData,
@@ -215,36 +292,90 @@ const EpubReaderPage = () => {
       })
     }
     
-    if (readingProgressData?.current_cfi && !hasLoadedPosition.current && rendition) {
+    if (readingProgressData?.current_cfi && rendition) {
+      // Mark as loaded immediately to prevent any race conditions
+      hasLoadedPosition.current = true
+      
+      const savedCfi = readingProgressData.current_cfi
+      
       if (import.meta.env.DEV) {
-        console.log('🚀 Loading saved position:', readingProgressData.current_cfi)
+        console.log('🚀 Loading saved position:', savedCfi)
         console.log('Rendition ready:', !!rendition)
       }
       
-      // Set location in state first
-      setLocationOriginal(readingProgressData.current_cfi)
+      // Wait for the book to be fully ready before navigating
+      const book = rendition.book
       
-      // Also explicitly display in rendition to ensure it loads
-      if (import.meta.env.DEV) {
-        console.log('Calling rendition.display with saved position')
-      }
-      
-      rendition
-        .display(readingProgressData.current_cfi)
-        .then(() => {
+      const navigateToSavedPosition = async () => {
+        try {
+          // Wait for book to be ready (spine loaded, etc.)
+          await book.ready
+          
           if (import.meta.env.DEV) {
-            console.log('✅ Successfully displayed saved position')
+            console.log('Book ready, navigating to saved CFI:', savedCfi)
           }
-        })
-        .catch((err) => {
+          
+          // Ignore locationChanged events for the next 3 seconds
+          // This prevents epub.js from resetting to chapter start after we navigate
+          ignoreLocationChangeUntilRef.current = Date.now() + 3000
+          
+          // Set location in state
+          setLocationOriginal(savedCfi)
+          
+          // Display the saved position
+          await rendition.display(savedCfi)
+          
+          if (import.meta.env.DEV) {
+            console.log('✅ First display complete')
+          }
+          
+          // epub.js sometimes resets position due to internal events (resize, content loading)
+          // We need to force navigation again after these events settle
+          // Wait for layout to stabilize and navigate again
+          setTimeout(async () => {
+            try {
+              if (import.meta.env.DEV) {
+                console.log('🔄 Re-navigating to ensure correct position:', savedCfi)
+              }
+              await rendition.display(savedCfi)
+              
+              if (import.meta.env.DEV) {
+                console.log('✅ Successfully displayed saved position (final)')
+                const currentLoc = rendition.currentLocation()
+                console.log('Current location after final navigation:', currentLoc?.start?.cfi)
+              }
+              
+              // Clear the ignore flag after final navigation succeeds
+              setTimeout(() => {
+                ignoreLocationChangeUntilRef.current = 0
+                if (import.meta.env.DEV) {
+                  console.log('✅ Position restore complete, locationChanged events enabled')
+                }
+              }, 500)
+            } catch (e) {
+              if (import.meta.env.DEV) {
+                console.error('Re-navigation failed:', e)
+              }
+              ignoreLocationChangeUntilRef.current = 0
+            }
+          }, 500)
+          
+        } catch (err) {
           if (import.meta.env.DEV) {
             console.error('❌ Failed to display saved position:', err)
           }
+          // Clear the ignore flag on error
+          ignoreLocationChangeUntilRef.current = 0
           // Fallback to beginning if saved position is invalid
-          return rendition.display(0)
-        })
+          try {
+            await rendition.display(0)
+          } catch (e) {
+            console.error('Fallback navigation also failed:', e)
+          }
+        }
+      }
       
-      hasLoadedPosition.current = true
+      navigateToSavedPosition()
     }
   }, [readingProgressData, setLocationOriginal, rendition, progressLoading])
 
@@ -306,11 +437,19 @@ const EpubReaderPage = () => {
     }
 
     // Only resize if visibility actually changed (not on initial render)
+    // AND we're not in the middle of restoring saved position
     if (rendition && prevSidebarVisibilityRef.current !== showCommentsSidebar) {
-      // Small delay to let CSS transitions complete
-      setTimeout(() => {
-        rendition.resize()
-      }, 300)
+      // Skip resize during position restore to avoid disrupting navigation
+      if (ignoreLocationChangeUntilRef.current > Date.now()) {
+        if (import.meta.env.DEV) {
+          console.log('⏳ Skipping resize during position restore')
+        }
+      } else {
+        // Small delay to let CSS transitions complete
+        setTimeout(() => {
+          rendition.resize()
+        }, 300)
+      }
     }
 
     // Update ref for next comparison
