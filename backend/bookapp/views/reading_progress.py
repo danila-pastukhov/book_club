@@ -38,8 +38,6 @@ def get_reading_progress(request, slug):
                     "user": user.id,
                     "book": {"id": book.id, "title": book.title, "slug": book.slug},
                     "current_cfi": "",
-                    "current_page": 1,
-                    "total_pages": 1,
                     "character_offset": 0,
                     "progress_percent": 0,
                     "is_completed": False,
@@ -66,7 +64,7 @@ def update_reading_progress(request, slug):
         )
         if serializer.is_valid():
 
-            logging.info(f"Updating reading progress for user {user.id} on book {book.slug} with data: {request.data}")
+        
             saved_progress = serializer.save()
 
             # Calculate progress_percent based on book content type
