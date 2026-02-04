@@ -98,13 +98,10 @@ const BookPagesPage = ({ isAuthenticated }) => {
 
   // Dynamic pagination hook
   const {
-    linesPerPage,
     currentPage,
     totalPages,
     characterOffset,
     currentText,
-    wrappedText,
-    wrappedLines,
     goToPage,
     goToPrevPage,
     goToNextPage,
@@ -287,31 +284,51 @@ const BookPagesPage = ({ isAuthenticated }) => {
 
   const handleJumpToText = useCallback(
     (targetText) => {
-      if (!targetText || !wrappedText || wrappedLines.length === 0) return
+      if (!targetText || !book?.content) return
 
-      const index = wrappedText.indexOf(targetText)
-      if (index === -1) return
+      // Normalize whitespace: collapse multiple spaces/newlines to single space
+      const normalize = (str) => str.replace(/\s+/g, ' ').trim()
 
-      let runningOffset = 0
-      let lineIndex = 0
-      for (let i = 0; i < wrappedLines.length; i += 1) {
-        const lineLength = wrappedLines[i].length
-        const lineEnd = runningOffset + lineLength
-        if (index <= lineEnd) {
-          lineIndex = i
-          break
+      // Try exact match first in original content
+      let index = book.content.indexOf(targetText)
+
+      // If not found, try with normalized whitespace
+      // This handles cases where line breaks differ due to dynamic pagination
+      if (index === -1) {
+        const normalizedTarget = normalize(targetText)
+        const normalizedContent = normalize(book.content)
+        const normalizedIndex = normalizedContent.indexOf(normalizedTarget)
+
+        if (normalizedIndex === -1) return
+
+        // Map normalized index back to approximate original index
+        // by counting characters while collapsing whitespace
+        let originalIndex = 0
+        let normPos = 0
+        let inWhitespace = false
+
+        while (originalIndex < book.content.length && normPos < normalizedIndex) {
+          const char = book.content[originalIndex]
+          const isWs = /\s/.test(char)
+
+          if (isWs) {
+            if (!inWhitespace) {
+              normPos++ // Count whitespace sequence as single space
+              inWhitespace = true
+            }
+          } else {
+            normPos++
+            inWhitespace = false
+          }
+          originalIndex++
         }
-        runningOffset = lineEnd + 1
+        index = originalIndex
       }
 
-      const targetPage = Math.min(
-        totalPages,
-        Math.max(1, Math.floor(lineIndex / linesPerPage) + 1),
-      )
-
-      goToPage(targetPage)
+      // Use restorePosition which handles offset-to-page mapping
+      restorePosition(index)
     },
-    [wrappedText, wrappedLines, totalPages, linesPerPage, goToPage],
+    [book?.content, restorePosition],
   )
 
   if (bookLoading) {
