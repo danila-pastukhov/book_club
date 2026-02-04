@@ -12,6 +12,7 @@ import CommentButton from '@/ui_components/CommentButton'
 import CommentForm from '@/ui_components/CommentForm'
 import CommentsSidebar from '@/ui_components/CommentsSidebar'
 import useBookComments from '@/hooks/useBookComments'
+import useDynamicPagination from '@/hooks/useDynamicPagination'
 import EpubReaderPage from './EpubReaderPage'
 
 import { IoHomeOutline } from 'react-icons/io5'
@@ -23,13 +24,13 @@ const BookPagesPage = ({ isAuthenticated }) => {
   const { slug } = useParams()
   const queryClient = useQueryClient()
   const textRef = useRef(null)
+  const containerRef = useRef(null)
 
   const hasToken = !!localStorage.getItem('access')
   const isAuth = typeof isAuthenticated === 'boolean' ? isAuthenticated : hasToken
 
   const [showCommentsSidebar, setShowCommentsSidebar] = useState(true)
   const [fontSize, setFontSize] = useState(100)
-  const [currentPage, setCurrentPage] = useState(1)
   const [showCommentButton, setShowCommentButton] = useState(false)
   const [commentButtonPosition, setCommentButtonPosition] = useState({ x: 0, y: 0 })
   const [selectedTextData, setSelectedTextData] = useState(null)
@@ -95,52 +96,46 @@ const BookPagesPage = ({ isAuthenticated }) => {
     handleCommentTypeChange,
   } = useBookComments(slug, isAuth)
 
+  // Dynamic pagination hook
+  const {
+    linesPerPage,
+    currentPage,
+    totalPages,
+    characterOffset,
+    currentText,
+    wrappedText,
+    wrappedLines,
+    goToPage,
+    goToPrevPage,
+    goToNextPage,
+    restorePosition,
+    debouncedRecalculate,
+  } = useDynamicPagination({
+    content: book?.content,
+    containerRef,
+    textRef,
+    fontSize,
+    columnCount: 2,
+    columnGap: 40,
+    initialCharacterOffset: 0,
+  })
+
+  // Restore reading position when progress data is loaded
+  const hasRestoredPosition = useRef(false)
   useEffect(() => {
-    if (readingProgressData?.current_page && readingProgressData.current_page > 1) {
-      setCurrentPage(readingProgressData.current_page)
+    if (hasRestoredPosition.current || !readingProgressData) return
+
+    if (readingProgressData.character_offset > 0) {
+      restorePosition(readingProgressData.character_offset)
+      hasRestoredPosition.current = true
     }
-  }, [readingProgressData])
+  }, [readingProgressData, restorePosition])
 
-  const linesPerPage = 18
-  const symbolsPerLine = 75
-
-  const { totalPages, currentText, wrappedText, wrappedLines } = useMemo(() => {
-    if (!book?.content) {
-      return { totalPages: 1, currentText: '', wrappedText: '', wrappedLines: [] }
-    }
-
-    const wrappedLines = book.content.split('\n').flatMap((paragraph) => {
-      if (!paragraph.trim()) return ['']
-      const words = paragraph.split(' ')
-      const result = []
-      let currentLine = ''
-      words.forEach((word) => {
-        if (currentLine.length + word.length + 1 > symbolsPerLine) {
-          result.push(currentLine)
-          currentLine = word
-        } else {
-          currentLine += (currentLine.length ? ' ' : '') + word
-        }
-      })
-      if (currentLine) result.push(currentLine)
-      return result
-    })
-
-    const pages = Math.max(1, Math.ceil(wrappedLines.length / linesPerPage))
-    const pageLines = wrappedLines.slice(
-      (currentPage - 1) * linesPerPage,
-      currentPage * linesPerPage,
-    )
-
-    const wrappedText = wrappedLines.join('\n').replace(/\n{2,}/g, '\n')
-
-    return {
-      totalPages: pages,
-      currentText: pageLines.join('\n').replace(/\n{2,}/g, '\n'),
-      wrappedText,
-      wrappedLines,
-    }
-  }, [book?.content, currentPage])
+  // Recalculate pagination when sidebar visibility changes
+  useEffect(() => {
+    const timer = setTimeout(debouncedRecalculate, 300)
+    return () => clearTimeout(timer)
+  }, [showCommentsSidebar, debouncedRecalculate])
 
   const highlightedContent = useMemo(() => {
     if (!currentText || !comments || comments.length === 0) return currentText
@@ -218,12 +213,13 @@ const BookPagesPage = ({ isAuthenticated }) => {
     return result
   }, [currentText, comments])
 
-  const lastProgressRef = useRef({ page: null, total: null })
+  const lastProgressRef = useRef({ charOffset: null, page: null, total: null })
 
   useEffect(() => {
     if (!isAuth || !book?.content) return
 
     const shouldSend =
+      lastProgressRef.current.charOffset !== characterOffset ||
       lastProgressRef.current.page !== currentPage ||
       lastProgressRef.current.total !== totalPages
 
@@ -233,12 +229,17 @@ const BookPagesPage = ({ isAuthenticated }) => {
       updateProgressMutation.mutate({
         current_page: currentPage,
         total_pages: totalPages,
+        character_offset: characterOffset,
       })
-      lastProgressRef.current = { page: currentPage, total: totalPages }
-    }, 1000)
+      lastProgressRef.current = {
+        charOffset: characterOffset,
+        page: currentPage,
+        total: totalPages,
+      }
+    }, 2000) // Increased debounce to 2 seconds like EpubReaderPage
 
     return () => clearTimeout(timer)
-  }, [currentPage, totalPages, book?.content, isAuth, updateProgressMutation])
+  }, [currentPage, totalPages, characterOffset, book?.content, isAuth, updateProgressMutation])
 
   const clearSelection = useCallback(() => {
     setSelectedTextData(null)
@@ -308,9 +309,9 @@ const BookPagesPage = ({ isAuthenticated }) => {
         Math.max(1, Math.floor(lineIndex / linesPerPage) + 1),
       )
 
-      setCurrentPage(targetPage)
+      goToPage(targetPage)
     },
-    [wrappedText, wrappedLines, totalPages, linesPerPage],
+    [wrappedText, wrappedLines, totalPages, linesPerPage, goToPage],
   )
 
   if (bookLoading) {
@@ -424,7 +425,7 @@ const BookPagesPage = ({ isAuthenticated }) => {
 
       {/* Reader Container */}
       <div className="flex-1 relative flex overflow-hidden">
-        <div className="flex-1 overflow-hidden min-h-0">
+        <div ref={containerRef} className="flex-1 overflow-hidden min-h-0">
           <div
             className="h-full overflow-y-auto px-6 py-6"
             onMouseUp={handleMouseUp}
@@ -470,17 +471,42 @@ const BookPagesPage = ({ isAuthenticated }) => {
         )}
 
         {/* Navigation buttons */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2">
           <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onClick={goToPrevPage}
             disabled={currentPage === 1}
             className="bg-[#FFFFFF] dark:bg-[#1F2136] border border-[#E8E8EA] dark:border-[#242535] shadow-md rounded-full p-3 hover:bg-[#F6F6F7] dark:hover:bg-[#242535] transition-colors disabled:opacity-50"
             title="Предыдущая страница"
           >
             <FiChevronLeft size={24} className="text-[#3B3C4A] dark:text-[#BABABF]" />
           </button>
+
+          {/* Page input */}
+          <div className="flex items-center gap-1 bg-[#FFFFFF] dark:bg-[#1F2136] border border-[#E8E8EA] dark:border-[#242535] shadow-md rounded-lg px-3 py-2">
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={currentPage}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10)
+                if (!isNaN(value) && value >= 1 && value <= totalPages) {
+                  goToPage(value)
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.target.blur()
+                }
+              }}
+              className="w-12 text-center bg-transparent text-[#181A2A] dark:text-[#FFFFFF] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <span className="text-[#3B3C4A] dark:text-[#BABABF]">/</span>
+            <span className="text-[#3B3C4A] dark:text-[#BABABF] min-w-[2rem]">{totalPages}</span>
+          </div>
+
           <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            onClick={goToNextPage}
             disabled={currentPage === totalPages}
             className="bg-[#FFFFFF] dark:bg-[#1F2136] border border-[#E8E8EA] dark:border-[#242535] shadow-md rounded-full p-3 hover:bg-[#F6F6F7] dark:hover:bg-[#242535] transition-colors disabled:opacity-50"
             title="Следующая страница"

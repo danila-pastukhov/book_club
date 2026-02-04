@@ -677,6 +677,7 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
             "current_cfi",
             "current_page",
             "total_pages",
+            "character_offset",
             "progress_percent",
             "is_completed",
             "last_read_at",

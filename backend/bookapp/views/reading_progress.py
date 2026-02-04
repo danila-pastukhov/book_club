@@ -40,6 +40,7 @@ def get_reading_progress(request, slug):
                     "current_cfi": "",
                     "current_page": 1,
                     "total_pages": 1,
+                    "character_offset": 0,
                     "progress_percent": 0,
                     "is_completed": False,
                     "last_read_at": None,
