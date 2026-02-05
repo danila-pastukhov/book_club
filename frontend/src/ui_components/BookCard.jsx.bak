@@ -38,7 +38,7 @@ const BookCard = ({book, showVisibilityLabels = false}) => {
             <span>{Number(averageRating).toFixed(1)}</span>
           </div>
         ) : (
-          <div className="text-sm text-gray-400 dark:text-gray-400">Нет отзывов</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">Нет рейтинга</div>
         )}
       </div>
 
@@ -57,20 +57,6 @@ const BookCard = ({book, showVisibilityLabels = false}) => {
           {book.title}
         </h3>
       </Link>
-
-      {book.hashtags?.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {book.hashtags.map((h) => (
-            <Link
-              key={h.id}
-              to={`/books?tag=${h.name}`}
-              className="text-xs text-[#4B6BFB] hover:underline"
-            >
-              #{h.name}
-            </Link>
-          ))}
-        </div>
-      )}
 
       <CardFooter book={book} />
     </div>

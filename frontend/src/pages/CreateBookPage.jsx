@@ -35,6 +35,8 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
   const [visibility, setVisibility] = useState(book?.visibility || "public");
   const [selectedGroupId, setSelectedGroupId] = useState(book?.reading_group || "");
   const [imagePreview, setImagePreview] = useState(null);
+  const [hashtags, setHashtags] = useState(book?.hashtags?.map((h) => h.name) || []);
+  const [hashtagInput, setHashtagInput] = useState("");
 
   const bookID = book?.id;
 
@@ -103,6 +105,9 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
       }
     }
 
+    // Добавляем хештеги
+    hashtags.forEach((tag) => formData.append("hashtags", tag));
+
     // Добавляем изображение только если выбран новый файл
     if (data.featured_image && data.featured_image.length > 0 && data.featured_image[0] instanceof File) {
       formData.append("featured_image", data.featured_image[0]);
@@ -129,6 +134,25 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddHashtag = () => {
+    const tag = hashtagInput.trim().replace(/^#/, "").toLowerCase();
+    if (tag && !hashtags.includes(tag)) {
+      setHashtags([...hashtags, tag]);
+    }
+    setHashtagInput("");
+  };
+
+  const handleRemoveHashtag = (tagToRemove) => {
+    setHashtags(hashtags.filter((t) => t !== tagToRemove));
+  };
+
+  const handleHashtagKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddHashtag();
     }
   };
 
@@ -295,6 +319,46 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
 
         {errors?.category?.message && (
           <InputError error={errors.category.message} />
+        )}
+      </div>
+
+      <div className="w-full">
+        <Label>Хештеги</Label>
+        <div className="flex gap-2 mt-1">
+          <Input
+            type="text"
+            value={hashtagInput}
+            onChange={(e) => setHashtagInput(e.target.value)}
+            onKeyDown={handleHashtagKeyDown}
+            placeholder="Введите хештег"
+            className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[40px] flex-1 max-sm:text-[14px]"
+          />
+          <button
+            type="button"
+            onClick={handleAddHashtag}
+            className="bg-[#4B6BFB] text-white px-4 rounded-md text-sm"
+          >
+            +
+          </button>
+        </div>
+        {hashtags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {hashtags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#4B6BFB]/10 text-[#4B6BFB] text-sm"
+              >
+                #{tag}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveHashtag(tag)}
+                  className="ml-1 text-[#4B6BFB] hover:text-red-500 font-bold"
+                >
+                  &times;
+                </button>
+              </span>
+            ))}
+          </div>
         )}
       </div>
 

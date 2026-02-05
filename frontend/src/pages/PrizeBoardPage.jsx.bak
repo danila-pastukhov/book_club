@@ -1,9 +1,8 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getPrizeBoard, placeRewardOnBoard, removeRewardFromBoard, getMyRewards, getMyRewardPlacements } from "@/services/apiBook";
 import PrizeBoard from "@/ui_components/PrizeBoard";
 import Spinner from "@/ui_components/Spinner";
-
 
 const PrizeBoardPage = ({ username }) => {
   const { slug } = useParams();
@@ -29,8 +28,6 @@ const PrizeBoardPage = ({ username }) => {
     queryFn: getMyRewardPlacements,
     enabled: canEditBoard,
   });
-
-  const navigate = useNavigate();
 
   // Place reward mutation
   const placeRewardMutation = useMutation({
@@ -166,17 +163,16 @@ const PrizeBoardPage = ({ username }) => {
   return (
     <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#181A2A]">
       <div className="max-w-6xl mx-auto px-6 py-10">
-        <div className="mb-8">
-                <button
-                  onClick={() => navigate(`/groups/${slug}/`)}
-                  className="bg-[#4B6BFB] text-white py-3 px-6 rounded-md hover:bg-[#3a5ae0] transition-colors"
-                >
-                  Назад к группе
-                </button>
-              </div>
-
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            to={`/groups/${slug}`}
+            className="text-[#4B6BFB]"
+          >
+            ← Назад к группе
+          </Link>
+        </div>
         <h2 className="text-center text-2xl md:text-3xl font-semibold text-[#181A2A] dark:text-[#FFFFFF] mb-6">
-          Доска наград группы {boardData?.reading_group?.name}
+          Доска наград группы "{boardData?.reading_group?.name}"
         </h2>
 
         {placeRewardMutation.isError && (

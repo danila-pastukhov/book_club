@@ -13,7 +13,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from ..models import Book, ReadingGroup, UserToReadingGroupState, ReadingProgress, BookComment
+from ..models import Book, Hashtag, ReadingGroup, UserToReadingGroupState, ReadingProgress, BookComment
 from ..serializers import BookSerializer
 from ..validators import validate_epub_file_complete
 from ..epub_handler import EPUBHandler, parse_epub_file
@@ -283,7 +283,18 @@ def create_book(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        return Response(serializer.data)
+        # Handle hashtags
+        hashtag_names = request.data.getlist("hashtags")
+        if hashtag_names:
+            hashtag_objs = []
+            for name in hashtag_names:
+                name = name.strip().lstrip("#").lower()
+                if name:
+                    obj, _ = Hashtag.objects.get_or_create(name=name)
+                    hashtag_objs.append(obj)
+            book.hashtags.set(hashtag_objs)
+
+        return Response(BookSerializer(book).data)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -360,7 +371,20 @@ def update_book(request, pk):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        return Response(serializer.data)
+        # Handle hashtags
+        hashtag_names = request.data.getlist("hashtags")
+        if hashtag_names:
+            hashtag_objs = []
+            for name in hashtag_names:
+                name = name.strip().lstrip("#").lower()
+                if name:
+                    obj, _ = Hashtag.objects.get_or_create(name=name)
+                    hashtag_objs.append(obj)
+            updated_book.hashtags.set(hashtag_objs)
+        elif "hashtags" in request.data:
+            updated_book.hashtags.clear()
+
+        return Response(BookSerializer(updated_book).data)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -379,3 +403,37 @@ def delete_book(request, pk):
     return Response(
         {"message": "Book deleted successfully"}, status=status.HTTP_204_NO_CONTENT
     )
+
+
+@api_view(["GET"])
+def search_books_by_hashtag(request):
+    tag_name = request.query_params.get("tag", "").strip().lstrip("#").lower()
+    if not tag_name:
+        return Response(
+            {"error": "Parameter 'tag' is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user = request.user if request.user.is_authenticated else None
+    books = Book.objects.filter(hashtags__name=tag_name)
+
+    if user:
+        user_group_ids = UserToReadingGroupState.objects.filter(
+            user=user, in_reading_group=True
+        ).values_list("reading_group_id", flat=True)
+
+        books = books.filter(
+            models.Q(visibility="public")
+            | models.Q(visibility="personal", author=user)
+            | models.Q(visibility="group", reading_group_id__in=user_group_ids)
+        )
+    else:
+        books = books.filter(visibility="public")
+
+    books = books.select_related("author", "reading_group").prefetch_related("hashtags").distinct()
+
+    amount = int(request.query_params.get("amount", 9))
+    paginator = AnyListPagination(amount=amount)
+    paginated_books = paginator.paginate_queryset(books, request)
+    serializer = BookSerializer(paginated_books, many=True)
+    return paginator.get_paginated_response(serializer.data)

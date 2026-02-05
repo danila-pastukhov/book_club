@@ -107,6 +107,20 @@ const DetailPage = ({ username, isAuthenticated }) => {
       <div className="padding-dx max-container py-9">
         <Badge book={book} />
 
+        {book.hashtags?.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {book.hashtags.map((h) => (
+              <Link
+                key={h.id}
+                to={`/books?tag=${h.name}`}
+                className="text-sm px-3 py-1 rounded-full bg-[#4B6BFB]/10 text-[#4B6BFB] hover:bg-[#4B6BFB]/20 transition-colors"
+              >
+                #{h.name}
+              </Link>
+            ))}
+          </div>
+        )}
+
         <div className="flex justify-between items-center gap-4">
           <h2 className="py-6 leading-normal text-2xl md:text-3xl text-[#181A2A] tracking-wide font-semibold dark:text-[#FFFFFF]">
             {book.title}
