@@ -140,6 +140,7 @@ class Book(models.Model):
     )
 
     title = models.CharField(max_length=255)
+    book_author = models.CharField(max_length=255, blank=True, default="", verbose_name="Автор книги")
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
     content = models.TextField(blank=True, null=True)
@@ -810,14 +811,13 @@ class ReadingProgress(models.Model):
         verbose_name="Текущая позиция",
         help_text="EPUB CFI - текущая позиция в книге",
     )
-    current_page = models.IntegerField(
-        default=1,
-        verbose_name="Текущая страница",
-        help_text="Номер текущей страницы для обычных книг",
+
+    character_offset = models.IntegerField(
+        default=0,
+        verbose_name="Позиция символа",
+        help_text="Индекс первого символа на текущей странице (для TXT)",
     )
-    total_pages = models.IntegerField(
-        default=1, verbose_name="Всего страниц", help_text="Общее количество страниц"
-    )
+
     progress_percent = models.FloatField(
         default=0, verbose_name="Прогресс (%)", help_text="Процент прочитанного (0-100)"
     )

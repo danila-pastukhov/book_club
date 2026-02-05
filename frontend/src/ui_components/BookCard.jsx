@@ -58,6 +58,12 @@ const BookCard = ({book, showVisibilityLabels = false}) => {
         </h3>
       </Link>
 
+      {book.book_author && (
+        <p className="text-sm text-[#3B3C4A] dark:text-[#BABABF] -mt-2">
+          {book.book_author}
+        </p>
+      )}
+
       {book.hashtags?.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {book.hashtags.map((h) => (

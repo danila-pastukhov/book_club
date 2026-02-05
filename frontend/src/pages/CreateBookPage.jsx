@@ -87,6 +87,7 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
     }
     const formData = new FormData();
     formData.append("title", data.title);
+    formData.append("book_author", data.book_author);
     formData.append("description", data.description);
     formData.append("category", data.category);
     formData.append("content_type", contentType);
@@ -201,7 +202,20 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
       </div>
 
       <div>
-        <Label htmlFor="description">Описание</Label>
+        <Label htmlFor="book_author" className="dark:text-[97989F]">
+          Автор книги
+        </Label>
+        <Input
+          type="text"
+          id="book_author"
+          {...register("book_author")}
+          placeholder="Укажите автора книги"
+          className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[40px] w-[400px] max-sm:w-[300px] max-sm:text-[14px]"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="description">Описание*</Label>
         <Textarea
           id="description"
           placeholder="Дайте краткое описание вашей книге"
