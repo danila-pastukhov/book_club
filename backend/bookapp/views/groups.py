@@ -180,6 +180,14 @@ def add_user_to_group(request, pk):
 @permission_classes([IsAuthenticated])
 def confirm_user_to_group(request, pk, user_id):
     reading_group = get_object_or_404(ReadingGroup, id=pk)
+
+    # Проверка, что текущий пользователь является создателем группы
+    if reading_group.creator != request.user:
+        return Response(
+            {"error": "Only group creator can confirm members"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
     user = get_object_or_404(CustomUser, id=user_id)
     UserToReadingGroupState.objects.filter(
         reading_group=reading_group, user=user  # HERE
@@ -193,6 +201,14 @@ def confirm_user_to_group(request, pk, user_id):
 def remove_user_from_group(request, pk):
     user = request.user
     reading_group = get_object_or_404(ReadingGroup, id=pk)
+
+    # Проверка, что текущий пользователь является создателем группы
+    if reading_group.creator != user:
+        return Response(
+            {"error": "Only group creator can remove members"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
     reading_group.user.remove(user)
     serializer = ReadingGroupSerializer(reading_group)
     return Response(serializer.data)
