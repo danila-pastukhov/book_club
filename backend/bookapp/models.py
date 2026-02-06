@@ -87,12 +87,24 @@ def transliterate(text):
     return "".join(CYRILLIC_TO_LATIN.get(char, char) for char in text)
 
 
-# Create your models here.
+import os
+import uuid
+
+
+def unique_file_name(upload_path):
+# Generate a unique file name using UUID
+    def generate_unique_filename(instance, filename):
+
+        ext = os.path.splitext(filename)[1]  
+        unique_filename = f"{uuid.uuid4()}{ext}"
+        return os.path.join(upload_path, unique_filename)
+
+    return generate_unique_filename
 
 
 class CustomUser(AbstractUser):
     bio = models.TextField(blank=True, null=True)
-    profile_picture = models.ImageField(upload_to="profile_img", blank=True, null=True)
+    profile_picture = models.ImageField(upload_to=unique_file_name("profile_img/"), blank=True, null=True)
     profile_picture_url = models.URLField(blank=True, null=True)
     job_title = models.CharField(max_length=50, blank=True, null=True)
 
@@ -156,7 +168,7 @@ class Book(models.Model):
         max_length=20, choices=CONTENT_TYPE, default="plaintext"
     )
     epub_file = models.FileField(
-        upload_to="epub_files/",
+        upload_to=unique_file_name("epub_files/"),
         blank=True,
         null=True,
         validators=[
@@ -177,7 +189,7 @@ class Book(models.Model):
     published_date = models.DateTimeField(blank=True, null=True)
     is_draft = models.BooleanField(default=True)
     category = models.CharField(max_length=255, choices=CATEGORY, blank=True, null=True)
-    featured_image = models.ImageField(upload_to="book_img", blank=True, null=True)
+    featured_image = models.ImageField(upload_to=unique_file_name("book_img/"), blank=True, null=True)
     visibility = models.CharField(
         max_length=20,
         choices=VISIBILITY_CHOICES,
@@ -229,15 +241,6 @@ class Book(models.Model):
 
         if not self.is_draft and self.published_date is None:
             self.published_date = timezone.now()
-# need to add unique  but short  suffix to featured_image name to avoid overwriting images with same name
-        if self.featured_image:
-            import os
-            import uuid
-            from django.core.files.base import ContentFile
-
-            filename, ext = os.path.splitext(self.featured_image.name)
-            unique_filename = f"{filename}_{uuid.uuid4().hex[:8]}{ext}"
-            self.featured_image.name = unique_filename   
 
         
         super().save(*args, **kwargs)
@@ -260,7 +263,7 @@ class ReadingGroup(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     featured_image = models.ImageField(
-        upload_to="reading_group_img", blank=True, null=True
+        upload_to=unique_file_name("reading_group_img/"), blank=True, null=True
     )
     description = models.TextField(blank=True, null=True)
 
@@ -482,7 +485,7 @@ class RewardTemplate(models.Model):
     """Template for rewards that can be earned by completing quests."""
 
     name = models.CharField(max_length=200, verbose_name="Название")
-    image = models.ImageField(upload_to="rewards/", verbose_name="Изображение")
+    image = models.ImageField(upload_to=unique_file_name("rewards/"), verbose_name="Изображение")
 
     class Meta:
         verbose_name = "Шаблон приза"

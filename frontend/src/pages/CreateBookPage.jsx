@@ -64,14 +64,12 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
   const updateMutation = useMutation({
     mutationFn: ({ data, id }) => updateBook(data, id),
     onSuccess: () => {
-      navigate("/");
-      toast.success("Your book has been updated successfully!");
-      console.log("Your book has been updated successfully!");
+      navigate("/books");
+      toast.success("Книга обновлена успешно!");
     },
 
     onError: (err) => {
-      toast.error(err.message);
-      console.log("Error updating book", err);
+      toast.error("Ошибка при обновлении книги: " + err.message);
     },
   });
 
@@ -80,7 +78,11 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
     onSuccess: () => {
       toast.success("Книга создана успешно.");
       queryClient.invalidateQueries({ queryKey: ["books"] });
-      navigate("/");
+      navigate("/books");
+    },
+
+    onError: (err) => {
+      toast.error("Ошибка при создании книги: " + err.message);
     },
   });
 

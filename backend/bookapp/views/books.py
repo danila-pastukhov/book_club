@@ -242,6 +242,11 @@ def create_book(request):
                         logger.warning(
                             f"Invalid EPUB file uploaded by user {user.username}: {error_message}"
                         )
+                        # Delete uploaded files from S3/MinIO before deleting the book record
+                        if book.epub_file:
+                            book.epub_file.delete(save=False)
+                        if book.featured_image:
+                            book.featured_image.delete(save=False)
                         book.delete()
                         return Response(
                             {"error": f"Invalid EPUB file: {error_message}"},
@@ -268,7 +273,11 @@ def create_book(request):
 
             except Exception as e:
                 logger.error(f"Error processing EPUB file: {e}")
-                # Delete the book if EPUB processing fails
+                # Delete uploaded files from S3/MinIO before deleting the book record
+                if book.epub_file:
+                    book.epub_file.delete(save=False)
+                if book.featured_image:
+                    book.featured_image.delete(save=False)
                 book.delete()
                 return Response(
                     {"error": f"Failed to process EPUB file: {str(e)}"},
@@ -319,7 +328,17 @@ def update_book(request, pk):
         if visibility == "personal":
             serializer.validated_data["reading_group"] = None
 
+        # Save old files for deletion if they are being replaced
+        old_epub_file = book.epub_file if "epub_file" in request.FILES and book.epub_file else None
+        old_featured_image = book.featured_image if "featured_image" in request.FILES and book.featured_image else None
+
         updated_book = serializer.save()
+
+        # Delete old files from S3/MinIO after successful update
+        if old_epub_file:
+            old_epub_file.delete(save=False)
+        if old_featured_image:
+            old_featured_image.delete(save=False)
 
         # If a new EPUB file was uploaded, process it
         if "epub_file" in request.FILES:
@@ -391,6 +410,13 @@ def delete_book(request, pk):
             {"error": "You are not the author of this book"},
             status=status.HTTP_403_FORBIDDEN,
         )
+
+    # Delete files from S3/MinIO before deleting the book
+    if book.epub_file:
+        book.epub_file.delete(save=False)
+    if book.featured_image:
+        book.featured_image.delete(save=False)
+
     book.delete()
     return Response(
         {"message": "Book deleted successfully"}, status=status.HTTP_204_NO_CONTENT

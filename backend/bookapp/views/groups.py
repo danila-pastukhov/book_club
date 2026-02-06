@@ -171,9 +171,18 @@ def update_reading_group(request, pk):
             {"error": "You are not the creator of this group"},
             status=status.HTTP_403_FORBIDDEN,
         )
+
+    # Save old featured_image for deletion if it's being replaced
+    old_featured_image = reading_group.featured_image if "featured_image" in request.FILES and reading_group.featured_image else None
+
     serializer = ReadingGroupSerializer(reading_group, data=request.data)
     if serializer.is_valid():
         serializer.save()
+
+        # Delete old file from S3/MinIO after successful update
+        if old_featured_image:
+            old_featured_image.delete(save=False)
+
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -266,6 +275,11 @@ def delete_reading_group(request, pk):
             {"error": "You are not the creator of this group"},
             status=status.HTTP_403_FORBIDDEN,
         )
+
+    # Delete file from S3/MinIO before deleting the group
+    if reading_group.featured_image:
+        reading_group.featured_image.delete(save=False)
+
     reading_group.delete()
     return Response(
         {"message": "Group deleted successfully"}, status=status.HTTP_204_NO_CONTENT

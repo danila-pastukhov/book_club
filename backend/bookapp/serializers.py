@@ -55,6 +55,10 @@ class UpdateUserProfileSerializer(serializers.ModelSerializer):
         # Если profile_picture не в initial_data, не обновляем его
         if "profile_picture" not in self.initial_data:
             validated_data.pop("profile_picture", None)
+        # Если загружается новая картинка, удаляем старую из S3/MinIO
+        elif "profile_picture" in validated_data and validated_data["profile_picture"]:
+            if instance.profile_picture:
+                instance.profile_picture.delete(save=False)
 
         return super().update(instance, validated_data)
 
