@@ -14,34 +14,46 @@ import {
 } from "@/components/ui/select";
 import InputError from "@/ui_components/InputError";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { createBook, updateBook, getUserCreatedGroups } from "@/services/apiBook";
+import { createBook, updateBook, getUserCreatedGroups, getBook } from "@/services/apiBook";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import SmallSpinner from "@/ui_components/SmallSpinner";
 import SmallSpinnerText from "@/ui_components/SmallSpinnerText";
 import LoginPage from "./LoginPage";
 import { resolveMediaUrl } from "@/api";
-
-
-//TODO fix update book - reload book data with infoOly=true to load content and other fields
+import Spinner from "@/ui_components/Spinner";
 
 const CreateBookPage = ({ book, isAuthenticated }) => {
+  // If book is passed (edit mode), load full book data with all fields including content
+  const {
+    data: fullBook,
+    isPending: isLoadingFullBook,
+    isError: isFullBookError
+  } = useQuery({
+    queryKey: ['fullBook', book?.slug],
+    queryFn: () => getBook(book.slug, false), // info_only = false to get all fields
+    enabled: !!book, // Only run query if book is passed (edit mode)
+  });
+
+  // Use fullBook if available (edit mode), otherwise use passed book (which will be undefined for create mode)
+  const bookData = fullBook || book;
+
   const { register, handleSubmit, formState, setValue } = useForm({
-    defaultValues: book ? book : {},
+    defaultValues: bookData || {},
   });
   const { errors } = formState;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [contentType, setContentType] = useState(book?.content_type || "plaintext");
+  const [contentType, setContentType] = useState(bookData?.content_type || "plaintext");
   const [epubFileName, setEpubFileName] = useState("");
-  const [visibility, setVisibility] = useState(book?.visibility || "public");
-  const [selectedGroupId, setSelectedGroupId] = useState(book?.reading_group || "");
+  const [visibility, setVisibility] = useState(bookData?.visibility || "public");
+  const [selectedGroupId, setSelectedGroupId] = useState(bookData?.reading_group || "");
   const [imagePreview, setImagePreview] = useState(null);
-  const [hashtags, setHashtags] = useState(book?.hashtags?.map((h) => h.name) || []);
+  const [hashtags, setHashtags] = useState(bookData?.hashtags?.map((h) => h.name) || []);
   const [hashtagInput, setHashtagInput] = useState("");
 
-  const bookID = book?.id;
+  const bookID = bookData?.id;
 
 
   // Register required fields for validation (without ref, since Radix Select doesn't support it)
@@ -49,10 +61,26 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
     register("category", { required: "Категория книги обязательна" });
     register("visibility", { required: "Тип книги обязателен" });
     // Set default visibility value in form when creating new book
-    if (!book) {
+    if (!bookData) {
       setValue("visibility", "public");
     }
-  }, [register, setValue, book]);
+  }, [register, setValue, bookData]);
+
+  // Update form values when fullBook data is loaded
+  useEffect(() => {
+    if (fullBook) {
+      setValue("title", fullBook.title);
+      setValue("book_author", fullBook.book_author || "");
+      setValue("description", fullBook.description);
+      setValue("content", fullBook.content || "");
+      setValue("category", fullBook.category);
+      setValue("visibility", fullBook.visibility);
+      setContentType(fullBook.content_type || "plaintext");
+      setVisibility(fullBook.visibility || "public");
+      setSelectedGroupId(fullBook.reading_group || "");
+      setHashtags(fullBook.hashtags?.map((h) => h.name) || []);
+    }
+  }, [fullBook, setValue]);
 
   const { data: userGroups } = useQuery({
     queryKey: ["userCreatedGroups"],
@@ -107,7 +135,8 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
     if (contentType === "plaintext") {
       formData.append("content", data.content);
     } else if (contentType === "epub") {
-      if (data.epub_file && data.epub_file[0]) {
+      // Добавляем epub файл только если выбран новый файл
+      if (data.epub_file && data.epub_file.length > 0 && data.epub_file[0] instanceof File) {
         formData.append("epub_file", data.epub_file[0]);
       }
     }
@@ -119,7 +148,7 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
     if (data.featured_image && data.featured_image.length > 0 && data.featured_image[0] instanceof File) {
       formData.append("featured_image", data.featured_image[0]);
     }
-    if (book && bookID) {
+    if (bookData && bookID) {
       updateMutation.mutate({ data: formData, id: bookID });
     } else {
       mutation.mutate(formData);
@@ -167,20 +196,38 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
     return <LoginPage />;
   }
 
+  // Show loading spinner while fetching full book data in edit mode
+  if (book && isLoadingFullBook) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Spinner />
+      </div>
+    );
+  }
+
+  // Show error message if failed to load full book data
+  if (book && isFullBookError) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <p className="text-red-500">Ошибка при загрузке данных книги</p>
+      </div>
+    );
+  }
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       className={`${
-        book && "h-[90%] overflow-auto"
+        bookData && "h-[90%] overflow-auto"
       }  md:px-16 px-8 py-6 flex flex-col mx-auto my-9 items-center gap-6 w-fit rounded-lg bg-[#FFFFFF] shadow-xl dark:text-white dark:bg-[#141624]`}
     >
       <div className="flex flex-col gap-2 justify-center items-center mb-2">
         <h3 className="font-semibold text-2xl max-sm:text-xl">
-          {book ? "Обновить книгу" : "Создать книгу"}
+          {bookData ? "Обновить книгу" : "Создать книгу"}
         </h3>
 
         <p className="max-sm:text-[14px]">
-          {book
+          {bookData
             ? "Хотите внести изменения в свою книгу?"
             : "Создайте новую книгу и поделитесь своими идеями."}
         </p>
@@ -290,13 +337,13 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
         </div>
       ) : (
         <div className="w-full">
-          <Label htmlFor="epub_file">EPUB файл *</Label>
+          <Label htmlFor="epub_file">EPUB файл {!bookData && "*"}</Label>
           <Input
             type="file"
             id="epub_file"
             accept=".epub"
             {...register("epub_file", {
-              required: contentType === "epub" && !book ? "EPUB файл обязателен" : false,
+              required: contentType === "epub" && !bookData ? "EPUB файл обязателен" : false,
             })}
             onChange={handleEpubFileChange}
             className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[40px] w-full max-sm:w-[300px] max-sm:text-[14px]"
@@ -304,6 +351,11 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
           {epubFileName && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               Выбран файл: {epubFileName}
+            </p>
+          )}
+          {bookData && contentType === "epub" && (
+            <p className="text-[12px] text-gray-500 mt-2">
+              Оставьте пустым, чтобы сохранить текущий EPUB файл.
             </p>
           )}
           {errors?.epub_file?.message && (
@@ -317,7 +369,7 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
 
         <Select
           onValueChange={(value) => setValue("category", value, { shouldValidate: true })}
-          defaultValue={book ? book.category : ""}
+          defaultValue={bookData ? bookData.category : ""}
         >
           <SelectTrigger className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[40px] w-full max-sm:w-[300px] max-sm:text-[14px]">
             <SelectValue placeholder="Выберите категорию" />
@@ -459,7 +511,7 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
                   setSelectedGroupId(value);
                   setValue("reading_group", value, { shouldValidate: true });
                 }}
-                defaultValue={book?.reading_group ? String(book.reading_group) : ""}
+                defaultValue={bookData?.reading_group ? String(bookData.reading_group) : ""}
                 disabled={creatorGroups.length === 0}
               >
                 <SelectTrigger className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[40px] w-full max-sm:w-[300px] max-sm:text-[14px]">
@@ -495,13 +547,13 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
           )}
 
       <div className="w-full">
-        <Label htmlFor="featured_image">Изображение книги {!book && "*"}</Label>
+        <Label htmlFor="featured_image">Изображение книги {!bookData && "*"}</Label>
 
         {/* Отображение текущего изображения */}
-        {!imagePreview && book?.featured_image && (
+        {!imagePreview && bookData?.featured_image && (
           <div className="mb-3">
             <img
-              src={resolveMediaUrl(book.featured_image)}
+              src={resolveMediaUrl(bookData.featured_image)}
               alt="Current book cover"
               className="h-40 w-40 rounded-lg object-cover border-2 border-[#141624] dark:border-[#3B3C4A]"
             />
@@ -526,13 +578,13 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
           id="picture"
           accept="image/*"
           {...register("featured_image", {
-            required: book ? false : "Изображение книги обязательно",
+            required: bookData ? false : "Изображение книги обязательно",
           })}
           onChange={handleImageChange}
           className="border-2 border-[#141624] dark:border-[#3B3C4A] focus:outline-0 h-[40px] w-full max-sm:w-[300px] max-sm:text-[14px]"
         />
 
-        {book && (
+        {bookData && (
           <p className="text-[12px] text-gray-500 mt-2">
             Оставьте пустым, чтобы сохранить текущее изображение.
           </p>
@@ -544,7 +596,7 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
       </div>
 
       <div className="w-full flex items-center justify-center flex-col my-4">
-        {book ? (
+        {bookData ? (
           <button
             disabled={updateMutation.isPending}
             className="bg-[#4B6BFB] text-white w-full py-3 px-2 rounded-md flex items-center justify-center gap-2"
