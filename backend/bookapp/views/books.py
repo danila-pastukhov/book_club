@@ -13,8 +13,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from ..models import Book, Hashtag, ReadingGroup, UserToReadingGroupState, ReadingProgress, BookComment
-from ..serializers import BookSerializer
+from ..models import Book, Hashtag, UserToReadingGroupState
+from ..serializers import BookSerializer, BookSerializerInfo
 from ..validators import validate_epub_file_complete
 from ..epub_handler import EPUBHandler, parse_epub_file
 from .utils import local_epub_path, AnyListPagination
@@ -40,11 +40,7 @@ def book_list(request, amount):
         books = Book.objects.filter(visibility="public").select_related('author', 'reading_group')
     paginator = AnyListPagination(amount=amount)
     paginated_books = paginator.paginate_queryset(books, request)
-    serializer = BookSerializer(paginated_books, many=True)
-    # logger.info(f"requested URL: {request.build_absolute_uri()}")
-    # logger.info(f"Pagination info: {paginator.page_size} items per page requested.")
-    # logger.info(f"Pagination info: {paginator.page.number} current page number.")
-    # logger.info(f"Books retrieved: {serializer.data}")
+    serializer = BookSerializerInfo(paginated_books, many=True)
     return paginator.get_paginated_response(serializer.data)
 
 
@@ -54,15 +50,8 @@ def public_book_list(request, amount):
     books = Book.objects.filter(visibility="public").select_related('author', 'reading_group')
     paginator = AnyListPagination(amount=amount)
     paginated_books = paginator.paginate_queryset(books, request)
-    serializer = BookSerializer(paginated_books, many=True)
+    serializer = BookSerializerInfo(paginated_books, many=True)
     return paginator.get_paginated_response(serializer.data)
-
-
-# @api_view(['GET'])
-# def book_list(request):
-#     books = Book.objects.all()
-#     serializer = BookSerializer(books, many=True)
-#     return Response(serializer.data)
 
 
 @api_view(["GET"])
@@ -92,8 +81,11 @@ def get_book(request, slug):
                 {"error": "You do not have access to this book"},
                 status=status.HTTP_403_FORBIDDEN,
             )
+    if request.query_params.get("info_only", "false").lower() == "true":
+            serializer = BookSerializerInfo(book)
+    else:
+            serializer = BookSerializer(book)
 
-    serializer = BookSerializer(book)
     return Response(serializer.data)
 
 
@@ -215,10 +207,12 @@ def create_book(request):
     user = request.user
     serializer = BookSerializer(data=request.data)
 
+    logging.info(f"Creating book with data: {request.data} by user: {user.username}")
+
     if serializer.is_valid():
         visibility = serializer.validated_data.get("visibility", "public")
         reading_group = serializer.validated_data.get("reading_group")
-
+        logging.info(f" Visibility: {visibility}, Reading Group: {reading_group}")
         if visibility == "group" and not reading_group:
             return Response(
                 {"reading_group": "Групповая книга требует выбора группы"},
@@ -295,7 +289,7 @@ def create_book(request):
             book.hashtags.set(hashtag_objs)
 
         return Response(BookSerializer(book).data)
-
+    logging.error(f"Book creation failed with errors: {serializer.errors} for user: {user.username}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -435,5 +429,5 @@ def search_books_by_hashtag(request):
     amount = int(request.query_params.get("amount", 9))
     paginator = AnyListPagination(amount=amount)
     paginated_books = paginator.paginate_queryset(books, request)
-    serializer = BookSerializer(paginated_books, many=True)
+    serializer = BookSerializerInfo(paginated_books, many=True)
     return paginator.get_paginated_response(serializer.data)

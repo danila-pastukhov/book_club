@@ -124,15 +124,23 @@ class Book(models.Model):
     )
 
     CATEGORY = (
-        ("Science Fiction", "Science Fiction"),
-        ("Fantasy", "Fantasy"),
-        ("Detective Fiction", "Detective Fiction"),
-        ("Thriller", "Thriller"),
-        ("Romance", "Romance"),
-        ("Horror", "Horror"),
-        ("Historical Fiction", "Historical Fiction"),
-        ("Adventure", "Adventure"),
+        ("classic", "Классика"),
+        ("fantasy", "Фэнтези"),
+        ("detective_fiction", "Детектив"),
+        ("thriller", "Триллер"),
+        ("romance", "Романтика"),
+        ("horror", "Ужасы"),
+        ("adventure", "Приключения"),
+        ("science_fiction", "Научная фантастика"),
+        ("biography", "Биография"),
+        ("self_help", "Саморазвитие"),
+        ("poetry", "Поэзия"),
+        ("children", "Детская литература"),
+        ("non_fiction", "Документальная литература"),
+        ("business", "Бизнес и экономика"),
+        ("other", "Другое"),
     )
+
 
     CONTENT_TYPE = (
         ("plaintext", "Plain Text"),

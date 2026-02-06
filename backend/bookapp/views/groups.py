@@ -20,7 +20,7 @@ from ..models import (
     UserToReadingGroupState,
 )
 from ..serializers import (
-    BookSerializer,
+    BookSerializerInfo,
     ReadingGroupSerializer,
     UserToReadingGroupStateSerializer,
 )
@@ -60,7 +60,7 @@ def get_group_reading_books(request, slug):
     books = Book.objects.filter(id__in=book_ids).select_related(
         "author", "reading_group"
     )
-    serializer = BookSerializer(books, many=True)
+    serializer = BookSerializerInfo(books, many=True)
     return Response(serializer.data)
 
 
@@ -84,7 +84,7 @@ def get_group_posted_books(request, slug):
         reading_group=reading_group,
         author=reading_group.creator,
     )
-    serializer = BookSerializer(books, many=True)
+    serializer = BookSerializerInfo(books, many=True)
     return Response(serializer.data)
 
 

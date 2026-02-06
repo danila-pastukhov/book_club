@@ -22,6 +22,9 @@ import SmallSpinnerText from "@/ui_components/SmallSpinnerText";
 import LoginPage from "./LoginPage";
 import { resolveMediaUrl } from "@/api";
 
+
+//TODO fix update book - reload book data with infoOly=true to load content and other fields
+
 const CreateBookPage = ({ book, isAuthenticated }) => {
   const { register, handleSubmit, formState, setValue } = useForm({
     defaultValues: book ? book : {},
@@ -39,6 +42,7 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
   const [hashtagInput, setHashtagInput] = useState("");
 
   const bookID = book?.id;
+
 
   // Register required fields for validation (without ref, since Radix Select doesn't support it)
   useEffect(() => {
@@ -318,15 +322,22 @@ const CreateBookPage = ({ book, isAuthenticated }) => {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Categories</SelectLabel>
-              <SelectItem value="Science Fiction">Science Fiction</SelectItem>
-              <SelectItem value="Fantasy">Fantasy</SelectItem>
-              <SelectItem value="Detective Fiction">Detective Fiction</SelectItem>
-              <SelectItem value="Thriller">Thriller</SelectItem>
-              <SelectItem value="Romance">Romance</SelectItem>
-              <SelectItem value="Horror">Horror</SelectItem>
-              <SelectItem value="Historical Fiction">Historical Fiction</SelectItem>
-              <SelectItem value="Adventure">Adventure</SelectItem>
+
+              <SelectItem value="classic">Классика</SelectItem>
+              <SelectItem value="fantasy">Фэнтези</SelectItem>
+              <SelectItem value="detective_fiction">Детектив</SelectItem>
+              <SelectItem value="thriller">Триллер</SelectItem>
+              <SelectItem value="romance">Романтика</SelectItem>
+              <SelectItem value="horror">Ужасы</SelectItem>
+              <SelectItem value="adventure">Приключения</SelectItem>
+              <SelectItem value="science_fiction">Научная фантастика</SelectItem>
+              <SelectItem value="biography">Биография</SelectItem>
+              <SelectItem value="self_help">Саморазвитие</SelectItem>
+              <SelectItem value="poetry">Поэзия</SelectItem>
+              <SelectItem value="children">Детская литература</SelectItem>
+              <SelectItem value="non_fiction">Документальная литература</SelectItem>
+              <SelectItem value="business">Бизнес и экономика</SelectItem>
+              <SelectItem value="other">Другое</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>

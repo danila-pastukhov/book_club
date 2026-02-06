@@ -107,8 +107,8 @@ class BookSerializer(serializers.ModelSerializer):
     reading_group = serializers.PrimaryKeyRelatedField(
         queryset=ReadingGroup.objects.all(), required=False, allow_null=True
     )
-    average_rating = serializers.SerializerMethodField()
     hashtags = HashtagSerializer(many=True, read_only=True)
+    category_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
@@ -120,6 +120,7 @@ class BookSerializer(serializers.ModelSerializer):
             "slug",
             "author",
             "category",
+            "category_display",
             "description",
             "content",
             "content_type",
@@ -132,15 +133,11 @@ class BookSerializer(serializers.ModelSerializer):
             "is_draft",
             "visibility",
             "reading_group",
-            "average_rating",
             "hashtags",
         ]
 
-    def get_average_rating(self, instance):
-        rating = BookReview.objects.filter(book=instance).aggregate(
-            avg=Avg("stars_amount")
-        )
-        return rating["avg"]
+    def get_category_display(self, obj):
+        return dict(Book.CATEGORY).get(obj.category, "Unknown")
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -177,6 +174,62 @@ class BookSerializer(serializers.ModelSerializer):
                 )
 
         return data
+
+
+
+
+class BookSerializerInfo(serializers.ModelSerializer):
+    author = SimpleAuthorSerializer(read_only=True)
+    reading_group = serializers.PrimaryKeyRelatedField(
+        queryset=ReadingGroup.objects.all(), required=False, allow_null=True
+    )
+    average_rating = serializers.SerializerMethodField()
+    hashtags = HashtagSerializer(many=True, read_only=True)
+    category_display = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Book
+
+        fields = [
+            "id",
+            "title",
+            "book_author",
+            "slug",
+            "author",
+            "category_display",
+            "description",
+            "content_type",
+            "featured_image",
+            "published_date",
+            "created_at",
+            "updated_at",
+            "is_draft",
+            "visibility",
+            "reading_group",
+            "average_rating",
+            "hashtags",
+        ]
+
+    def get_category_display(self, obj):
+        return dict(Book.CATEGORY).get(obj.category, "Unknown")
+
+    
+
+    def get_average_rating(self, instance):
+        rating = BookReview.objects.filter(book=instance).aggregate(
+            avg=Avg("stars_amount")
+        )
+        return rating["avg"]
+
+
+
+
+
+
+
+
+
+
 
 
 class BookReviewSerializer(serializers.ModelSerializer):
@@ -329,7 +382,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     def get_author_posts(self, user):
         books = Book.objects.filter(author=user)[:9]
-        serializer = BookSerializer(books, many=True, context=self.context)
+        serializer = BookSerializerInfo(books, many=True, context=self.context)
         return serializer.data
 
     def get_reading_groups(self, user):

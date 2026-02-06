@@ -28,7 +28,7 @@ const DetailPage = ({ username, isAuthenticated }) => {
   function toggleModal() {
     setShowModal((curr) => !curr)
   }
-
+  const infoOnly = true
   const {
     isPending,
     isError,
@@ -36,7 +36,7 @@ const DetailPage = ({ username, isAuthenticated }) => {
     data: book,
   } = useQuery({
     queryKey: ['books', slug],
-    queryFn: () => getBook(slug),
+    queryFn: () => getBook(slug,infoOnly),
   })
 
   const {

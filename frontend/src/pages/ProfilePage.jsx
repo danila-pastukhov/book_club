@@ -104,7 +104,7 @@ const ProfilePage = ({ authUsername }) => {
               <div className="text-sm text-gray-600 dark:text-gray-400">Наград получено</div>
             </div>
             <div className="p-4 border rounded-lg dark:border-gray-700 bg-white dark:bg-gray-800">
-              <div className="text-3xl font-bold text-rose-600">
+              <div className="text-l font-bold text-blue-800">
                 {userStats.favorite_genre || "—"}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Любимый жанр</div>
