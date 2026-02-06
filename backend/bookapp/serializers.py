@@ -820,4 +820,9 @@ class UserStatsSerializer(serializers.ModelSerializer):
             .order_by("-total")
             .first()
         )
-        return top["book__category"] if top else None
+        top_display = dict(Book.CATEGORY).get(top["book__category"] )
+        return  top_display if top_display else None
+    
+    
+
+

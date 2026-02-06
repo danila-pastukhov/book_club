@@ -229,7 +229,17 @@ class Book(models.Model):
 
         if not self.is_draft and self.published_date is None:
             self.published_date = timezone.now()
+# need to add unique  but short  suffix to featured_image name to avoid overwriting images with same name
+        if self.featured_image:
+            import os
+            import uuid
+            from django.core.files.base import ContentFile
 
+            filename, ext = os.path.splitext(self.featured_image.name)
+            unique_filename = f"{filename}_{uuid.uuid4().hex[:8]}{ext}"
+            self.featured_image.name = unique_filename   
+
+        
         super().save(*args, **kwargs)
 
 

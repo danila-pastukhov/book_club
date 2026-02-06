@@ -207,12 +207,10 @@ def create_book(request):
     user = request.user
     serializer = BookSerializer(data=request.data)
 
-    logging.info(f"Creating book with data: {request.data} by user: {user.username}")
-
     if serializer.is_valid():
         visibility = serializer.validated_data.get("visibility", "public")
         reading_group = serializer.validated_data.get("reading_group")
-        logging.info(f" Visibility: {visibility}, Reading Group: {reading_group}")
+
         if visibility == "group" and not reading_group:
             return Response(
                 {"reading_group": "Групповая книга требует выбора группы"},
