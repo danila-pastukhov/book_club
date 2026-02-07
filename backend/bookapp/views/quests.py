@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_quests(request):
-    """Get all active global quests and user's group quests."""
+    """Get all active personal quests and user's group quests."""
     user = request.user
     from django.utils import timezone
 
@@ -51,12 +51,16 @@ def get_quests(request):
             start_date__lte=timezone.now(), end_date__gte=timezone.now()
         )
         .filter(
+            # 1st condition: group quests for user's groups
             models.Q(reading_group_id__in=user_groups)
+            # 2nd condition: personal quests created by user
             | models.Q(
                 reading_group__isnull=True,
                 participation_type="personal",
                 created_by=user,
             )
+            # 3rd condition: do not makes sense, group type always has reading group,
+            # need to check
             | models.Q(
                 reading_group__isnull=True,
                 participation_type="group",
@@ -282,7 +286,7 @@ def generate_daily_quests(request, slug):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def generate_daily_personal_quests(request):
-    """Generate 3 random daily personal quests (global personal)."""
+    """Generate 3 random daily personal quests."""
     from django.utils import timezone
 
     user = request.user

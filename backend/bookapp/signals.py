@@ -7,7 +7,7 @@ actions like creating comments, completing books, or placing rewards.
 
 import logging
 from django.db import transaction
-from django.db.models import F, Sum
+from django.db.models import F, Sum, Q
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -24,8 +24,6 @@ from .models import (
     UserRewardSummary,
     UserStats,
 )
-# from backend.bookapp import models
-
 
 def update_reward_summary(user, reward_template):
     """Recalculate reward summary for a user and reward template."""
@@ -64,12 +62,17 @@ def update_quest_progress(user, quest_type, reading_group=None):
     """
     now = timezone.now()
 
-    logging.info(f"Updating quest progress for user {user.username}, quest type '{quest_type}', reading group '{reading_group}' at {now}")
-
+    logging.info(f"Updating quest progress for user {user}, quest type '{quest_type}', reading group '{reading_group}' at {now}")
+    
     # Find all active quests of this type (lock rows to prevent concurrent modifications)
+    base_filter = Q(created_by=user)
+    if reading_group:
+        base_filter |= Q(reading_group=reading_group)
+
     quests = list(Quest.objects.select_for_update().filter(
+        base_filter,
         quest_type=quest_type,
-        is_completed=False,  # Only update quests that are not completed
+        is_completed=False,
         start_date__lte=now,
         end_date__gte=now,
     ))
@@ -251,6 +254,9 @@ def track_reading_quests(sender, instance, created, **kwargs):
         )
 
         # Update for global quests (no group)
+        # should be deleted, there is no global quests, only personal and group, 
+        # cause the error for personal quests
+
         update_quest_progress(
             user=instance.user, quest_type="read_books", reading_group=None
         )
