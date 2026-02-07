@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from urllib3 import request
 
 from ..models import Book, CustomUser, ReadingProgress
 from ..serializers import BookSerializerInfo, ReadingProgressSerializer
@@ -54,6 +55,10 @@ def get_reading_progress(request, slug):
 @permission_classes([IsAuthenticated])
 def update_reading_progress(request, slug):
     """Update user's reading progress for a book."""
+
+    logging.info(f"===============================")
+    logging.info(f"Received request to update reading progress for book slug '{slug}' with data: {request.data}")
+
     user = request.user
 
     try:
@@ -87,6 +92,8 @@ def update_reading_progress(request, slug):
                     except (TypeError, ValueError):
                         pass
 
+            logging.info(f"Calculated progress percent for book slug '{slug}': {calculated_percent}")
+
             # Update progress_percent if calculated
             if calculated_percent is not None:
                 saved_progress.progress_percent = min(calculated_percent, 100)
@@ -110,9 +117,9 @@ def update_reading_progress(request, slug):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def complete_book(request, slug):
-    """Mark a book as completed."""
+    """Mark a book as completed. not used for now, but can be useful for manual completion from profile or admin."""
     user = request.user
-
+    logging.info(f"Received request to mark book slug '{slug}' as completed for user {user.username}")
     try:
         book = Book.objects.get(slug=slug)
 

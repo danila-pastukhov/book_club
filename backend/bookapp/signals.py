@@ -5,7 +5,9 @@ This module handles automatic updates to quest progress when users perform
 actions like creating comments, completing books, or placing rewards.
 """
 
-from django.db.models import Sum
+import logging
+from django.db import transaction
+from django.db.models import F, Sum
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -50,6 +52,7 @@ def update_reward_summary(user, reward_template):
     summary.save()
 
 
+@transaction.atomic
 def update_quest_progress(user, quest_type, reading_group=None):
     """
     Update progress for all active quests of a specific type for a user.
@@ -61,14 +64,18 @@ def update_quest_progress(user, quest_type, reading_group=None):
     """
     now = timezone.now()
 
-    # Find all active quests of this type
-    quests = Quest.objects.filter(
+    logging.info(f"Updating quest progress for user {user.username}, quest type '{quest_type}', reading group '{reading_group}' at {now}")
+
+    # Find all active quests of this type (lock rows to prevent concurrent modifications)
+    quests = list(Quest.objects.select_for_update().filter(
         quest_type=quest_type,
         is_active=True,
         is_completed=False,  # Only update quests that are not completed
         start_date__lte=now,
         end_date__gte=now,
-    )
+    ))
+
+    logging.info(f"Found {len(quests)} active quests of type '{quest_type}' for user {user.username}")
 
     # Filter for personal vs group quests
     for quest in quests:
@@ -80,14 +87,19 @@ def update_quest_progress(user, quest_type, reading_group=None):
         if quest.participation_type == "group" and not reading_group:
             continue
 
-        # Get or create progress
-        progress, created = QuestProgress.objects.get_or_create(
+        # Skip personal/global quests when processing group-specific context
+        if not quest.reading_group and reading_group:
+            continue
+
+        # Get or create progress (lock row to prevent concurrent modifications)
+        progress, created = QuestProgress.objects.select_for_update().get_or_create(
             quest=quest, user=user, defaults={"current_count": 0}
         )
 
-        # Increment progress
-        progress.current_count += 1
-        progress.save()
+        # Atomic increment at DB level to prevent lost updates
+        progress.current_count = F('current_count') + 1
+        progress.save(update_fields=['current_count'])
+        progress.refresh_from_db()
 
         # В случае группового квеста нужно посчитать суммарный прогресс всех участников
         if quest.participation_type == "group" and reading_group:
@@ -108,6 +120,7 @@ def update_quest_progress(user, quest_type, reading_group=None):
             # Mark quest as completed to prevent further progress updates
             quest.is_completed = True
             quest.save()
+            logging.info(f"Quest '{quest.title}' completed by user {user.username} (progress: {progress.current_count}/{quest.target_count})")   
 
             # Get all users who contributed to this quest (have progress > 0)
             contributing_progresses = QuestProgress.objects.filter(
@@ -145,16 +158,16 @@ def update_quest_progress(user, quest_type, reading_group=None):
                             quest_completed=completion,
                         )
 
-                        # Update user stats
-                        stats, _ = UserStats.objects.get_or_create(user=contributor)
-                        stats.total_rewards_received += 1
-                        stats.save()
+                        # Update user stats (atomic increment)
+                        stats, _ = UserStats.objects.select_for_update().get_or_create(user=contributor)
+                        stats.total_rewards_received = F('total_rewards_received') + 1
+                        stats.save(update_fields=['total_rewards_received'])
 
                 # Update quest completion stats (only if completion was just created)
                 if completion_created:
-                    stats, _ = UserStats.objects.get_or_create(user=contributor)
-                    stats.total_quests_completed += 1
-                    stats.save()
+                    stats, _ = UserStats.objects.select_for_update().get_or_create(user=contributor)
+                    stats.total_quests_completed = F('total_quests_completed') + 1
+                    stats.save(update_fields=['total_quests_completed'])
 
                 # Create notification for quest completion (without using extra_text)
                 Notification.objects.create(
@@ -179,17 +192,19 @@ def track_comment_quests(sender, instance, created, **kwargs):
     if instance.parent_comment:
         # It's a reply
         quest_type = "reply_comments"
-        stats, _ = UserStats.objects.get_or_create(user=instance.user)
-        stats.total_replies_created += 1
-        stats.save()
+        with transaction.atomic():
+            stats, _ = UserStats.objects.select_for_update().get_or_create(user=instance.user)
+            stats.total_replies_created = F('total_replies_created') + 1
+            stats.save(update_fields=['total_replies_created'])
     else:
         # It's a root comment
         quest_type = "create_comments"
 
         # Update user stats for comments
-        stats, _ = UserStats.objects.get_or_create(user=instance.user)
-        stats.total_comments_created += 1
-        stats.save()
+        with transaction.atomic():
+            stats, _ = UserStats.objects.select_for_update().get_or_create(user=instance.user)
+            stats.total_comments_created = F('total_comments_created') + 1
+            stats.save(update_fields=['total_comments_created'])
 
     # Update quest progress
     update_quest_progress(
@@ -222,10 +237,11 @@ def track_reading_quests(sender, instance, created, **kwargs):
     was_completed = getattr(instance, "_was_completed", False)
 
     if instance.is_completed and not was_completed:
-        # Update user stats
-        stats, _ = UserStats.objects.get_or_create(user=instance.user)
-        stats.total_books_read += 1
-        stats.save()
+        # Update user stats (atomic increment)
+        with transaction.atomic():
+            stats, _ = UserStats.objects.select_for_update().get_or_create(user=instance.user)
+            stats.total_books_read = F('total_books_read') + 1
+            stats.save(update_fields=['total_books_read'])
 
         # Update quest progress for all relevant reading groups
         # (user might be reading the same book in multiple groups)
