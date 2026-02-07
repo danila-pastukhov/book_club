@@ -23,7 +23,11 @@ from .models import (
     UserReward,
     UserRewardSummary,
     UserStats,
+    Book,
+    UserToReadingGroupState
 )
+
+logger = logging.getLogger(__name__)
 
 def update_reward_summary(user, reward_template):
     """Recalculate reward summary for a user and reward template."""
@@ -51,48 +55,52 @@ def update_reward_summary(user, reward_template):
 
 
 @transaction.atomic
-def update_quest_progress(user, quest_type, reading_group=None):
+def update_quest_progress(user, quest_type, obj_reading_group=None, obj=None):
     """
     Update progress for all active quests of a specific type for a user.
 
     Args:
         user: The user performing the action
         quest_type: Type of quest ('read_books', 'create_comments', 'reply_comments', 'place_rewards')
-        reading_group: Optional reading group for group quests
+        obj_reading_group: Optional reading group for group quests
+        obj: Optional object related to the quest progress update (e.g., comment, prize placement)
     """
     now = timezone.now()
 
-    logging.info(f"Updating quest progress for user {user}, quest type '{quest_type}', reading group '{reading_group}' at {now}")
+    logger.debug(f"Updating quest progress for user {user}, quest type '{quest_type}', reading group '{obj_reading_group}' at {now}")
     
     # Find all active quests of this type (lock rows to prevent concurrent modifications)
-    base_filter = Q(created_by=user)
-    if reading_group:
-        base_filter |= Q(reading_group=reading_group)
+    
+    filter_personal = Q(created_by=user)&Q(participation_type="personal")
+
+    if obj_reading_group:
+        filter_group = Q(reading_group=obj_reading_group)&Q(participation_type="group")
+    else:
+        filter_group = Q()  # No group filter if no reading group provided
+
+    # Special check for book completion quests
+    if obj:
+        if isinstance(obj, Book):
+            if obj.visibility == "public":
+                user_groups = UserToReadingGroupState.objects.filter(
+                user=user, in_reading_group=True)
+                # For public books, include quests from all user's groups
+                filter_group = Q(reading_group__in=user_groups.values_list('reading_group', flat=True))
+
 
     quests = list(Quest.objects.select_for_update().filter(
-        base_filter,
+        filter_personal | filter_group,
         quest_type=quest_type,
         is_completed=False,
         start_date__lte=now,
         end_date__gte=now,
     ))
 
-    logging.info(f"Found {len(quests)} active quests of type '{quest_type}' for user {user.username}")
+    logger.debug(f"Found {len(quests)} active quests of type '{quest_type}' for user {user.username}")
 
-    # Filter for personal vs group quests
     for quest in quests:
-        # Skip if quest is for a group and user is not in that group
-        if quest.reading_group and quest.reading_group != reading_group:
-            continue
 
-        # Skip if quest is global and we have a group context (for group-specific actions)
-        if quest.participation_type == "group" and not reading_group:
-            continue
-
-        # Skip personal/global quests when processing group-specific context
-        if not quest.reading_group and reading_group:
-            continue
-
+        logger.debug(f"Processing quest '{quest.title}' (ID: {quest.id}) for user {user.username}")
         # Get or create progress (lock row to prevent concurrent modifications)
         progress, created = QuestProgress.objects.select_for_update().get_or_create(
             quest=quest, user=user, defaults={"current_count": 0}
@@ -103,26 +111,28 @@ def update_quest_progress(user, quest_type, reading_group=None):
         progress.save(update_fields=['current_count'])
         progress.refresh_from_db()
 
-        # В случае группового квеста нужно посчитать суммарный прогресс всех участников
-        if quest.participation_type == "group" and reading_group:
+        logger.debug(f"Updated progress for quest '{quest.title}' (ID: {quest.id}): current_count={progress.current_count} (was created: {created})")
+
+        # В случае группового квеста нужно посчитать суммарный прогресс всех участников данного квеста
+        logger.debug(f"Checking if quest '{quest.title}' type of {quest.participation_type}  quest.id={quest.id}")
+        if quest.participation_type == "group":
             total_group_count = QuestProgress.objects.filter(
                 quest=quest,
-                user__usertoreadinggroupstate__reading_group=reading_group,
-                user__usertoreadinggroupstate__in_reading_group=True,
             ).aggregate(total_count=Sum("current_count"))["total_count"] or 0
 
             progress.current_count = total_group_count
+            logger.debug(f"Total group progress for quest '{quest.title}' (ID: {quest.id}): total_group_count={total_group_count}")
         # save не делаем здесь, чтобы не перезаписывать индивидуальный прогресс
         # в блоке выше пересчитывается прогресс для группового квеста
 
 
         # Check if quest is completed (reached target)
-       
+        logger.debug(f"Checking completion for quest '{quest.title}' (ID: {quest.id}): current_count={progress.current_count}, target_count={quest.target_count}")
         if progress.current_count >= quest.target_count and not quest.is_completed:
             # Mark quest as completed to prevent further progress updates
             quest.is_completed = True
             quest.save()
-            logging.info(f"Quest '{quest.title}' completed by user {user.username} (progress: {progress.current_count}/{quest.target_count})")   
+            logger.debug(f"Quest '{quest.title}' completed by user {user.username} (progress: {progress.current_count}/{quest.target_count})")   
 
             # Get all users who contributed to this quest (have progress > 0)
             contributing_progresses = QuestProgress.objects.filter(
@@ -139,7 +149,7 @@ def update_quest_progress(user, quest_type, reading_group=None):
                     user=contributor,
                     defaults={
                         "reading_group": (
-                            reading_group
+                            obj_reading_group
                             if quest.participation_type == "group"
                             else None
                         )
@@ -175,7 +185,7 @@ def update_quest_progress(user, quest_type, reading_group=None):
                 Notification.objects.create(
                     directed_to=contributor,
                     related_to=contributor,
-                    related_group=reading_group,
+                    related_group=obj_reading_group,
                     related_quest=quest,
                     related_reward=quest.reward_template,
                     category="QuestCompleted",
@@ -210,7 +220,9 @@ def track_comment_quests(sender, instance, created, **kwargs):
 
     # Update quest progress
     update_quest_progress(
-        user=instance.user, quest_type=quest_type, reading_group=instance.reading_group
+        user=instance.user,
+        quest_type=quest_type,
+        obj_reading_group=instance.reading_group,
     )
 
 
@@ -245,29 +257,18 @@ def track_reading_quests(sender, instance, created, **kwargs):
             stats.total_books_read = F('total_books_read') + 1
             stats.save(update_fields=['total_books_read'])
 
-        # Update quest progress for all relevant reading groups
-        # (user might be reading the same book in multiple groups)
-        from .models import UserToReadingGroupState
 
-        user_groups = UserToReadingGroupState.objects.filter(
-            user=instance.user, in_reading_group=True
-        )
 
         # Update for global quests (no group)
         # should be deleted, there is no global quests, only personal and group, 
         # cause the error for personal quests
 
         update_quest_progress(
-            user=instance.user, quest_type="read_books", reading_group=None
+            user=instance.user,
+            quest_type="read_books",
+            obj_reading_group=instance.book.reading_group,
+            obj=instance.book,
         )
-
-        # Update for each group the user is in
-        for membership in user_groups:
-            update_quest_progress(
-                user=instance.user,
-                quest_type="read_books",
-                reading_group=membership.reading_group,
-            )
 
 
 @receiver(post_save, sender=PrizeBoardCell)
@@ -282,7 +283,7 @@ def track_prize_placement_quests(sender, instance, created, **kwargs):
     update_quest_progress(
         user=instance.placed_by,
         quest_type="place_rewards",
-        reading_group=instance.board.reading_group,
+        obj_reading_group=instance.board.reading_group,
     )
 
 

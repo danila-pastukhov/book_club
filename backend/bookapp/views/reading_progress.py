@@ -56,8 +56,8 @@ def get_reading_progress(request, slug):
 def update_reading_progress(request, slug):
     """Update user's reading progress for a book."""
 
-    logging.info(f"===============================")
-    logging.info(f"Received request to update reading progress for book slug '{slug}' with data: {request.data}")
+    logger.debug(f"===============================")
+    logger.debug(f"Received request to update reading progress for book slug '{slug}' with data: {request.data}")
 
     user = request.user
 
@@ -92,7 +92,7 @@ def update_reading_progress(request, slug):
                     except (TypeError, ValueError):
                         pass
 
-            logging.info(f"Calculated progress percent for book slug '{slug}': {calculated_percent}")
+            logger.debug(f"Calculated progress percent for book slug '{slug}': {calculated_percent}")
 
             # Update progress_percent if calculated
             if calculated_percent is not None:
@@ -119,7 +119,7 @@ def update_reading_progress(request, slug):
 def complete_book(request, slug):
     """Mark a book as completed. not used for now, but can be useful for manual completion from profile or admin."""
     user = request.user
-    logging.info(f"Received request to mark book slug '{slug}' as completed for user {user.username}")
+    logger.debug(f"Received request to mark book slug '{slug}' as completed for user {user.username}")
     try:
         book = Book.objects.get(slug=slug)
 
