@@ -43,7 +43,7 @@ const ReplyForm = ({
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Write a reply..."
+          placeholder="Ответ..."
           className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
                      bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200
                      focus:ring-2 focus:ring-blue-500 focus:border-transparent
@@ -62,7 +62,7 @@ const ReplyForm = ({
           disabled={isSubmitting}
         >
           <IoClose size={16} />
-          Cancel
+          Отмена
         </button>
         <button
           type="submit"
@@ -72,7 +72,7 @@ const ReplyForm = ({
                      flex items-center gap-1 transition-colors"
         >
           <IoSend size={14} />
-          {isSubmitting ? 'Sending...' : editingReply ? 'Update' : 'Reply'}
+          {isSubmitting ? 'Отправка...' : editingReply ? 'Обновить' : 'Ответить'}
         </button>
       </div>
     </form>

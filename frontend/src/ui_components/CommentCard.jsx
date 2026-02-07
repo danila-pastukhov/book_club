@@ -52,10 +52,10 @@ const CommentCard = ({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) return 'Только что';
+    if (diffMins < 60) return `${diffMins}м назад`;
+    if (diffHours < 24) return `${diffHours}ч назад`;
+    if (diffDays < 7) return `${diffDays}д назад`;
     return date.toLocaleDateString();
   };
 
@@ -193,7 +193,7 @@ const CommentCard = ({
           >
             <IoChatbubbleOutline size={16} />
             <span>
-              {repliesCount > 0 ? `${repliesCount} ${repliesCount === 1 ? 'reply' : 'replies'}` : 'Reply'}
+              {repliesCount > 0 ? `${repliesCount} ${repliesCount === 1 ? 'Ответ' : 'Ответа'}` : 'Ответ'}
             </span>
             {repliesCount > 0 && (
               showReplies ? <IoChevronUp size={14} /> : <IoChevronDown size={14} />
