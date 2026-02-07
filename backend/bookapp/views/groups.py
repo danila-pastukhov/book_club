@@ -203,6 +203,13 @@ def add_user_to_group(request, pk):
 def confirm_user_to_group(request, pk, user_id):
     reading_group = get_object_or_404(ReadingGroup, id=pk)
     user = get_object_or_404(CustomUser, id=user_id)
+    #check if the requester is the group creator
+    if reading_group.creator != request.user:
+        return Response(
+            {"error": "Only the group creator can confirm members"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     UserToReadingGroupState.objects.filter(
         reading_group=reading_group, user=user  # HERE
     ).update(in_reading_group=True)

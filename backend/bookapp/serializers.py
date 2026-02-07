@@ -656,7 +656,6 @@ class QuestSerializer(serializers.ModelSerializer):
             "created_by",
             "start_date",
             "end_date",
-            "is_active",
             "is_completed",
             "created_at",
         ]

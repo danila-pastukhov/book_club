@@ -48,7 +48,7 @@ def get_quests(request):
     # Get active quests
     quests = (
         Quest.objects.filter(
-            is_active=True, start_date__lte=timezone.now(), end_date__gte=timezone.now()
+            start_date__lte=timezone.now(), end_date__gte=timezone.now()
         )
         .filter(
             models.Q(reading_group_id__in=user_groups)
@@ -97,7 +97,6 @@ def get_group_quests(request, slug):
 
         quests = Quest.objects.filter(
             reading_group=reading_group,
-            is_active=True,
             start_date__lte=timezone.now(),
             end_date__gte=timezone.now(),
         ).select_related("created_by", "reward_template")
@@ -181,7 +180,6 @@ def generate_daily_quests(request, slug):
 
         existing_quests = Quest.objects.filter(
             reading_group=reading_group,
-            is_active=True,
             start_date__gte=today_start,
             end_date__lte=today_end,
         )
@@ -264,7 +262,6 @@ def generate_daily_quests(request, slug):
                 reward_template=reward_template,
                 start_date=today_start,
                 end_date=today_end,
-                is_active=True,
             )
             created_quests.append(quest)
 
@@ -300,7 +297,6 @@ def generate_daily_personal_quests(request):
         participation_type="personal",
         period="day",
         created_by=user,
-        is_active=True,
         start_date__gte=today_start,
         end_date__lte=today_end,
     )
@@ -380,7 +376,6 @@ def generate_daily_personal_quests(request):
             reward_template=reward_template,
             start_date=today_start,
             end_date=today_end,
-            is_active=True,
         )
         QuestProgress.objects.get_or_create(
             user=user, quest=quest, defaults={"current_count": 0}
@@ -469,7 +464,6 @@ def get_my_quests(request):
         participation_type="personal",
         reading_group__isnull=True,
         created_by=user,
-        is_active=True,
         start_date__lte=now,
         end_date__gte=now,
     )
@@ -485,7 +479,6 @@ def get_my_quests(request):
 
     quests = (
         Quest.objects.filter(
-            is_active=True,
             start_date__lte=now,
             end_date__gte=now,
         )

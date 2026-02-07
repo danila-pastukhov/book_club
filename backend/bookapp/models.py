@@ -630,7 +630,6 @@ class Quest(models.Model):
 
     start_date = models.DateTimeField(verbose_name="Дата начала")
     end_date = models.DateTimeField(verbose_name="Дата окончания")
-    is_active = models.BooleanField(default=True, verbose_name="Активно")
     is_completed = models.BooleanField(
         default=False,
         verbose_name="Завершено",

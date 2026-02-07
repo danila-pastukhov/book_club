@@ -69,7 +69,6 @@ def update_quest_progress(user, quest_type, reading_group=None):
     # Find all active quests of this type (lock rows to prevent concurrent modifications)
     quests = list(Quest.objects.select_for_update().filter(
         quest_type=quest_type,
-        is_active=True,
         is_completed=False,  # Only update quests that are not completed
         start_date__lte=now,
         end_date__gte=now,

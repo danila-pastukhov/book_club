@@ -183,11 +183,10 @@ class QuestAdmin(admin.ModelAdmin):
         "participation_type",
         "target_count",
         "reading_group",
-        "is_active",
         "start_date",
         "end_date",
     )
-    list_filter = ("quest_type", "participation_type", "is_active", "reading_group")
+    list_filter = ("quest_type", "participation_type", "reading_group")
     search_fields = ("title", "description")
 
 
