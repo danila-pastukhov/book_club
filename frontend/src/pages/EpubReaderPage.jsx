@@ -393,6 +393,7 @@ const EpubReaderPage = () => {
     userGroupsLoading,
     isSubmitting,
     isAuthenticated: isAuth,
+    formError,
     handleSubmitComment,
     handleEditComment,
     handleDeleteComment,
@@ -697,6 +698,7 @@ const EpubReaderPage = () => {
           isEditing={!!editingComment}
           isSubmitting={isSubmitting}
           commentType={commentType}
+          error={formError}
         />
       )}
     </div>

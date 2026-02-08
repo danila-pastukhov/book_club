@@ -141,6 +141,7 @@ const CommentReplies = ({
   onOpenReplyForm,
   onCloseReplyForm,
   isDeleting,
+  replyFormError,
 }) => {
   return (
     <div
@@ -178,6 +179,7 @@ const CommentReplies = ({
           onCancel={onCloseReplyForm}
           isSubmitting={isSubmitting}
           editingReply={editingReply}
+          error={replyFormError}
         />
       ) : (
         <button

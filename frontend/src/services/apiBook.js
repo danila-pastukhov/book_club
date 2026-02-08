@@ -554,8 +554,15 @@ export async function updateCommentReply(slug, commentId, replyId, data) {
     )
     return response.data
   } catch (err) {
-    if (err.response) {
-      throw new Error(err.response?.data?.error || 'Failed to update reply')
+    if (err.response?.data) {
+      const d = err.response.data
+      if (typeof d === 'object' && !d.error) {
+        const firstField = Object.keys(d)[0]
+        if (firstField && Array.isArray(d[firstField])) {
+          throw new Error(d[firstField][0])
+        }
+      }
+      throw new Error(d.error || 'Failed to update reply')
     }
     throw new Error(err.message)
   }

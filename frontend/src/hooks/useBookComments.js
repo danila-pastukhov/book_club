@@ -18,6 +18,7 @@ export const useBookComments = (slug, isAuthenticated = true) => {
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [editingComment, setEditingComment] = useState(null)
   const [showCommentForm, setShowCommentForm] = useState(false)
+  const [formError, setFormError] = useState(null)
 
   const readingGroupId = searchParams.get('reading_group_id')
 
@@ -93,6 +94,7 @@ export const useBookComments = (slug, isAuthenticated = true) => {
         queryKey: ['bookComments', slug, commentType, readingGroupId],
       })
       setShowCommentForm(false)
+      setFormError(null)
       if (onCreateSuccess) {
         onCreateSuccess()
         setOnCreateSuccess(null)
@@ -102,10 +104,10 @@ export const useBookComments = (slug, isAuthenticated = true) => {
       if (import.meta.env.DEV) {
         console.error('Failed to create comment:', err)
       }
-      // Close the form so the user can see the toast message
-      setShowCommentForm(false)
-      setEditingComment(null)
-      toast.error(err.message || 'Ошибка при создании комментария')
+      // Don't close the form - show error in the form itself
+      const errorMessage = err.message || 'Ошибка при создании комментария'
+      setFormError(errorMessage)
+      toast.error(errorMessage)
     },
   })
 
@@ -119,11 +121,13 @@ export const useBookComments = (slug, isAuthenticated = true) => {
       })
       setShowCommentForm(false)
       setEditingComment(null)
+      setFormError(null)
     },
     onError: (err) => {
-      setShowCommentForm(false)
-      setEditingComment(null)
-      toast.error(err.message || 'Ошибка при обновлении комментария')
+      // Don't close the form - show error in the form itself
+      const errorMessage = err.message || 'Ошибка при обновлении комментария'
+      setFormError(errorMessage)
+      toast.error(errorMessage)
     },
   })
 
@@ -193,11 +197,13 @@ export const useBookComments = (slug, isAuthenticated = true) => {
 
   const handleOpenCommentForm = () => {
     setShowCommentForm(true)
+    setFormError(null)
   }
 
   const handleCloseCommentForm = () => {
     setShowCommentForm(false)
     setEditingComment(null)
+    setFormError(null)
   }
 
   const handleSelectGroup = (group) => {
@@ -233,6 +239,7 @@ export const useBookComments = (slug, isAuthenticated = true) => {
     userGroups,
     userGroupsLoading,
     isAuthenticated,
+    formError,
 
     // Mutation states
     isSubmitting:

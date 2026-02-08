@@ -162,6 +162,7 @@ const BookPagesPage = ({ isAuthenticated }) => {
     userGroups,
     userGroupsLoading,
     isSubmitting,
+    formError,
     handleSubmitComment,
     handleEditComment,
     handleDeleteComment,
@@ -597,6 +598,7 @@ const BookPagesPage = ({ isAuthenticated }) => {
           isEditing={!!editingComment}
           isSubmitting={isSubmitting}
           commentType={commentType}
+          error={formError}
         />
       )}
     </div>

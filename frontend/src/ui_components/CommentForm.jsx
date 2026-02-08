@@ -10,6 +10,7 @@ const CommentForm = ({
   isEditing = false,
   isSubmitting = false,
   commentType = 'personal',
+  error = null,
 }) => {
   const [commentText, setCommentText] = useState(initialComment);
   const [highlightColor, setHighlightColor] = useState('#FFFF00');
@@ -61,6 +62,15 @@ const CommentForm = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg">
+              <p className="text-sm text-red-800 dark:text-red-300">
+                {error}
+              </p>
+            </div>
+          )}
+
           {/* Selected Text Display */}
           {selectedText && !isEditing && (
             <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">

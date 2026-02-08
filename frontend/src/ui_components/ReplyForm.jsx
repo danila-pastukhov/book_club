@@ -6,6 +6,7 @@ const ReplyForm = ({
   onCancel,
   isSubmitting = false,
   editingReply = null,
+  error = null,
 }) => {
   const [text, setText] = useState('');
 
@@ -39,6 +40,15 @@ const ReplyForm = ({
       onClick={(e) => e.stopPropagation()}
       className="mt-2"
     >
+      {/* Error Message */}
+      {error && (
+        <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded">
+          <p className="text-xs text-red-800 dark:text-red-300">
+            {error}
+          </p>
+        </div>
+      )}
+
       <div className="flex gap-2">
         <textarea
           value={text}

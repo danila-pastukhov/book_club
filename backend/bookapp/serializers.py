@@ -538,6 +538,13 @@ class CommentReplySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "user", "parent_comment", "created_at", "updated_at"]
 
+    def validate_comment_text(self, value):
+        """Validate that reply text is not empty and contains no profanity."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Reply text cannot be empty")
+        validate_no_profanity(value)
+        return value
+
 
 class CommentReplyCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating replies to comments."""

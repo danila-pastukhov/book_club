@@ -29,6 +29,7 @@ const CommentCard = ({
     showReplyForm,
     isSubmitting,
     isDeleting,
+    replyFormError,
     handleSubmitReply,
     handleEditReply,
     handleDeleteReply,
@@ -210,6 +211,7 @@ const CommentCard = ({
               editingReply={editingReply}
               isSubmitting={isSubmitting}
               isDeleting={isDeleting}
+              replyFormError={replyFormError}
               onSubmitReply={handleSubmitReply}
               onEditReply={handleEditReply}
               onDeleteReply={handleDeleteReply}

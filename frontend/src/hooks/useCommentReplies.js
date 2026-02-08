@@ -12,6 +12,7 @@ export const useCommentReplies = (slug, commentId, enabled = false) => {
   const queryClient = useQueryClient();
   const [editingReply, setEditingReply] = useState(null);
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyFormError, setReplyFormError] = useState(null);
 
   // Fetch replies for a specific comment
   const {
@@ -32,10 +33,14 @@ export const useCommentReplies = (slug, commentId, enabled = false) => {
       // Also invalidate parent comments to update replies_count
       queryClient.invalidateQueries({ queryKey: ['bookComments', slug] });
       setShowReplyForm(false);
+      setReplyFormError(null);
       toast.success('Reply added');
     },
     onError: (err) => {
-      toast.error(err.message || 'Failed to create reply');
+      // Don't close the form - show error in the form itself
+      const errorMessage = err.message || 'Failed to create reply';
+      setReplyFormError(errorMessage);
+      toast.error(errorMessage);
     },
   });
 
@@ -46,10 +51,14 @@ export const useCommentReplies = (slug, commentId, enabled = false) => {
       queryClient.invalidateQueries({ queryKey: ['commentReplies', slug, commentId] });
       setShowReplyForm(false);
       setEditingReply(null);
+      setReplyFormError(null);
       toast.success('Reply updated');
     },
     onError: (err) => {
-      toast.error(err.message || 'Failed to update reply');
+      // Don't close the form - show error in the form itself
+      const errorMessage = err.message || 'Failed to update reply';
+      setReplyFormError(errorMessage);
+      toast.error(errorMessage);
     },
   });
 
@@ -90,11 +99,13 @@ export const useCommentReplies = (slug, commentId, enabled = false) => {
   const handleOpenReplyForm = () => {
     setEditingReply(null);
     setShowReplyForm(true);
+    setReplyFormError(null);
   };
 
   const handleCloseReplyForm = () => {
     setShowReplyForm(false);
     setEditingReply(null);
+    setReplyFormError(null);
   };
 
   return {
@@ -104,6 +115,7 @@ export const useCommentReplies = (slug, commentId, enabled = false) => {
     repliesError,
     editingReply,
     showReplyForm,
+    replyFormError,
 
     // Mutation states
     isSubmitting: createReplyMutation.isPending || updateReplyMutation.isPending,
