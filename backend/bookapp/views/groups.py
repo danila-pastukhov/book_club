@@ -16,6 +16,7 @@ from ..models import (
     Book,
     BookComment,
     CustomUser,
+    Notification,
     ReadingGroup,
     UserToReadingGroupState,
 )
@@ -200,9 +201,18 @@ def add_user_to_group(request, pk):
     user = request.user
     reading_group = get_object_or_404(ReadingGroup, id=pk)
     reading_group.user.add(user, through_defaults={"in_reading_group": False})
+
+    creator = reading_group.creator
+    if creator and creator != user:
+        Notification.objects.create(
+            directed_to=creator,
+            related_to=user,
+            related_group=reading_group,
+            category="GroupJoinRequest",
+            extra_text="",
+        )
     serializer = ReadingGroupSerializer(reading_group)
     return Response(serializer.data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["PUT"])
@@ -274,6 +284,14 @@ def kick_user_from_group(request, pk, user_id):
     UserToReadingGroupState.objects.filter(
         reading_group=reading_group, user=user_to_remove
     ).delete()
+
+    Notification.objects.create(
+        directed_to=user_to_remove,
+        related_to=request.user,
+        related_group=reading_group,
+        category="GroupKick",
+        extra_text="",
+    )
 
     serializer = ReadingGroupSerializer(reading_group)
     return Response(serializer.data)

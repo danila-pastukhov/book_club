@@ -6,7 +6,7 @@ import QuestCard from "@/ui_components/QuestCard";
 import BookContainer from "@/ui_components/BookContainer";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { deleteReadingGroup, getReadingGroup, addUserToGroup, removeUserFromGroup, kickUserFromGroup, createNotification, getUserToReadingGroupStates, getGroupQuests, generateDailyQuests, getGroupReadingBooks, getGroupPostedBooks } from "@/services/apiBook";
+import { deleteReadingGroup, getReadingGroup, addUserToGroup, removeUserFromGroup, kickUserFromGroup, getUserToReadingGroupStates, getGroupQuests, generateDailyQuests, getGroupReadingBooks, getGroupPostedBooks } from "@/services/apiBook";
 import { MdPersonRemove } from "react-icons/md";
 import Spinner from "@/ui_components/Spinner";
 import { resolveMediaUrl } from "@/api";
@@ -111,27 +111,12 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
   })
 
 
-  const confirmMutation = useMutation({
-    mutationFn: (data) => createNotification(data),
-    onSuccess: () => {
-      toast.success("Отправлена нотификация.");
-      queryClient.invalidateQueries({ queryKey: ["groups", slug] });
-      queryClient.invalidateQueries({ queryKey: ["userToReadingGroupState", reading_groupID] });
-    },
-  });
-
   const requestMutation = useMutation({
     mutationFn: (id) => addUserToGroup(id),
     onSuccess: () => {
-
-      const formData = new FormData()
-      formData.append("directed_to_id", reading_group.creator.id || "")
-      formData.append("related_group_id", reading_group.id || "")
-      formData.append("category", "GroupJoinRequest")
-
-      confirmMutation.mutate(formData);
       toast.success("Отправлен запрос на добавление в группу.");
       queryClient.invalidateQueries({ queryKey: ["groups", slug] });
+      queryClient.invalidateQueries({ queryKey: ["userToReadingGroupState", reading_groupID] });
     },
   });
 
@@ -150,21 +135,8 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
   // Mutation for kicking a user (by creator)
   const kickUserMutation = useMutation({
     mutationFn: ({ userId }) => kickUserFromGroup(reading_groupID, userId),
-    onSuccess: (data, variables) => {
-      // Send notification to the kicked user
-      const formData = new FormData();
-      formData.append("directed_to_id", variables.userId);
-      formData.append("related_group_id", reading_group.id);
-      formData.append("category", "GroupKick");
-      
-      createNotification(formData)
-        .then(() => {
-          toast.success("Пользователь удалён из группы и уведомлён.");
-        })
-        .catch(() => {
-          toast.success("Пользователь удалён из группы.");
-        });
-      
+    onSuccess: () => {
+      toast.success("Пользователь удалён из группы.");
       queryClient.invalidateQueries({ queryKey: ["groups", slug] });
       queryClient.invalidateQueries({ queryKey: ["userToReadingGroupState", reading_groupID] });
     },
@@ -270,7 +242,7 @@ const ReadingGroupPage = ({ username, isAuthenticated }) => {
             ) : isUserPending ? (
               <button
                 disabled={true}
-                className="bg-[#939393] text-white py-3 px-8 rounded-md flex items-right justify-center gap-2 transition-colors"
+                className="bg-[#A6A6A6] text-white py-3 px-8 rounded-md flex items-right justify-center gap-2 transition-colors"
                 >
                   <p>Запрос на вступление отправлен</p>
                 </button>

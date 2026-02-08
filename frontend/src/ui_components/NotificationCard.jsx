@@ -80,6 +80,7 @@ const NotificationCard = ({ notification }) => {
     notification.category === "GroupRequestDeclined" ||
     notification.category === "GroupRequestAccepted" ||
     notification.category === "QuestCompleted" ||
+    notification.category === "GroupKick" ||
     notification.category === null;
 
   const shouldShowGroupAcceptDeclineButtons =
@@ -173,7 +174,21 @@ const NotificationCard = ({ notification }) => {
                 </div>
               )}
             </>
-          ) : (
+          ) : notification.category === "GroupKick" ? (
+            <>
+              Вы были удалены из группы{" "}
+              {notification.related_group ? (
+                <Link
+                  to={`/groups/${notification.related_group.slug}`}
+                  className="underline hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  {notification.related_group.name}
+                </Link>
+              ) : (
+                ""
+              )}
+            </>
+          ) :(
             "Новое уведомление"
           )}
         </p>
