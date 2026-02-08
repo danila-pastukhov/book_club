@@ -22,6 +22,7 @@ from .models import (
     UserStats,
     UserToReadingGroupState,
 )
+from .validators import validate_no_profanity
 
 
 def text_formating(content):
@@ -31,7 +32,7 @@ def text_formating(content):
 
 class UpdateUserProfileSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(
-        required=False, allow_null=True, allow_empty_file=True, write_only=True
+        required=False, allow_null=True, write_only=True
     )
 
     class Meta:
@@ -51,6 +52,11 @@ class UpdateUserProfileSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
         # Сделаем поля необязательными
         self.fields["profile_picture"].required = False
+
+    def validate_bio(self, value):
+        if value:
+            validate_no_profanity(value)
+        return value
 
     def update(self, instance, validated_data):
         # Если profile_picture не в initial_data, не обновляем его
@@ -260,7 +266,14 @@ class BookReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "user", "book", "creation_date", "likes"]
 
     def validate_description(self, value):
+        if value:
+            validate_no_profanity(value)
         return value or ""
+
+    def validate_title(self, value):
+        if value:
+            validate_no_profanity(value)
+        return value
 
 
 class UserWithStatusSerializer(serializers.ModelSerializer):
@@ -467,9 +480,10 @@ class BookCommentSerializer(serializers.ModelSerializer):
         return value
 
     def validate_comment_text(self, value):
-        """Validate that comment text is not empty."""
+        """Validate that comment text is not empty and contains no profanity."""
         if not value or not value.strip():
             raise serializers.ValidationError("Comment text cannot be empty")
+        validate_no_profanity(value)
         return value
 
 
@@ -486,6 +500,11 @@ class BookCommentCreateSerializer(serializers.ModelSerializer):
             "comment_text",
             "highlight_color",
         ]
+
+    def validate_comment_text(self, value):
+        """Validate that comment text contains no profanity."""
+        validate_no_profanity(value)
+        return value
 
     def validate(self, data):
         """Validate that the user is a member of the reading group (if group is specified)."""
@@ -530,9 +549,10 @@ class CommentReplyCreateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_comment_text(self, value):
-        """Validate that comment text is not empty."""
+        """Validate that reply text is not empty and contains no profanity."""
         if not value or not value.strip():
             raise serializers.ValidationError("Reply text cannot be empty")
+        validate_no_profanity(value)
         return value
 
     def validate(self, data):

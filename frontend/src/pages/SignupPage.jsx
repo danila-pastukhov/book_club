@@ -74,8 +74,8 @@ const SignupPage = ({ userInfo, updateForm, toggleModal }) => {
       formData.append('job_title', data.job_title || '')
       formData.append('bio', data.bio || '')
 
-      // Добавляем новое изображение только если оно выбрано
-      if (data.profile_picture && data.profile_picture.length > 0) {
+      // Добавляем новое изображение только если оно ДЕЙСТВИТЕЛЬНО выбрано (FileList с файлом)
+      if (data.profile_picture instanceof FileList && data.profile_picture.length > 0) {
         formData.append('profile_picture', data.profile_picture[0])
       }
 

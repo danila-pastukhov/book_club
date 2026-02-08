@@ -197,3 +197,23 @@ def validate_content_type_match(content_type, content, epub_file):
         return False, f"Invalid content_type: {content_type}"
 
     return True, None
+
+
+# ============================================================================
+# Profanity validation
+# ============================================================================
+
+
+def validate_no_profanity(value):
+    """
+    Django / DRF field validator that rejects text containing profanity.
+
+    Can be used both as a model-level validator and a serializer field validator.
+
+    Raises:
+        ValidationError: if profanity is detected in *value*.
+    """
+    from .content_moderation import contains_profanity, get_profanity_error_message
+
+    if value and contains_profanity(str(value)):
+        raise ValidationError(get_profanity_error_message())

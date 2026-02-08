@@ -102,6 +102,9 @@ export const useBookComments = (slug, isAuthenticated = true) => {
       if (import.meta.env.DEV) {
         console.error('Failed to create comment:', err)
       }
+      // Close the form so the user can see the toast message
+      setShowCommentForm(false)
+      setEditingComment(null)
       toast.error(err.message || 'Ошибка при создании комментария')
     },
   })
@@ -118,6 +121,8 @@ export const useBookComments = (slug, isAuthenticated = true) => {
       setEditingComment(null)
     },
     onError: (err) => {
+      setShowCommentForm(false)
+      setEditingComment(null)
       toast.error(err.message || 'Ошибка при обновлении комментария')
     },
   })

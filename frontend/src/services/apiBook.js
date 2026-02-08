@@ -59,8 +59,16 @@ export async function createBookReview(slug, data) {
     const response = await api.post(`books/${slug}/reviews/create/`, data)
     return response.data
   } catch (err) {
-    if (err.response) {
-      throw new Error(err.response?.data?.message || 'Failed to create review')
+    if (err.response?.data) {
+      const d = err.response.data
+      // DRF field-level errors: { field: ["msg", ...] }
+      if (typeof d === 'object' && !d.message) {
+        const firstField = Object.keys(d)[0]
+        if (firstField && Array.isArray(d[firstField])) {
+          throw new Error(d[firstField][0])
+        }
+      }
+      throw new Error(d.message || 'Failed to create review')
     }
     throw new Error(err.message)
   }
@@ -313,10 +321,16 @@ export async function updateProfile(data) {
     return response.data
   } catch (err) {
     console.log(err)
-    if (err.response) {
-      throw new Error(
-        err?.response?.data.username[0] || 'Failed to update profile',
-      )
+    if (err.response?.data) {
+      const d = err.response.data
+      // DRF field-level errors: { field: ["msg", ...] }
+      if (typeof d === 'object') {
+        const firstField = Object.keys(d)[0]
+        if (firstField && Array.isArray(d[firstField])) {
+          throw new Error(d[firstField][0])
+        }
+      }
+      throw new Error('Failed to update profile')
     }
 
     throw new Error(err.message)
@@ -431,8 +445,16 @@ export async function createBookComment(slug, data) {
     const response = await api.post(`books/${slug}/comments/create/`, data)
     return response.data
   } catch (err) {
-    if (err.response) {
-      throw new Error(err.response?.data?.error || 'Failed to create comment')
+    if (err.response?.data) {
+      const d = err.response.data
+      // DRF field-level errors: { field: ["msg", ...] }
+      if (typeof d === 'object' && !d.error) {
+        const firstField = Object.keys(d)[0]
+        if (firstField && Array.isArray(d[firstField])) {
+          throw new Error(d[firstField][0])
+        }
+      }
+      throw new Error(d.error || 'Failed to create comment')
     }
     throw new Error(err.message)
   }
@@ -458,8 +480,15 @@ export async function updateBookComment(slug, commentId, data) {
     )
     return response.data
   } catch (err) {
-    if (err.response) {
-      throw new Error(err.response?.data?.error || 'Failed to update comment')
+    if (err.response?.data) {
+      const d = err.response.data
+      if (typeof d === 'object' && !d.error) {
+        const firstField = Object.keys(d)[0]
+        if (firstField && Array.isArray(d[firstField])) {
+          throw new Error(d[firstField][0])
+        }
+      }
+      throw new Error(d.error || 'Failed to update comment')
     }
     throw new Error(err.message)
   }
@@ -503,8 +532,15 @@ export async function createCommentReply(slug, commentId, data) {
     )
     return response.data
   } catch (err) {
-    if (err.response) {
-      throw new Error(err.response?.data?.error || 'Failed to create reply')
+    if (err.response?.data) {
+      const d = err.response.data
+      if (typeof d === 'object' && !d.error) {
+        const firstField = Object.keys(d)[0]
+        if (firstField && Array.isArray(d[firstField])) {
+          throw new Error(d[firstField][0])
+        }
+      }
+      throw new Error(d.error || 'Failed to create reply')
     }
     throw new Error(err.message)
   }

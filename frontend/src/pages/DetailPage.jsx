@@ -83,6 +83,10 @@ const DetailPage = ({ username, isAuthenticated }) => {
       queryClient.invalidateQueries({ queryKey: ['bookReviews', slug] })
     },
     onError: (err) => {
+      setReviewTitle('')
+      setReviewDescription('')
+      setReviewStars(5)
+      setShowReviewForm(false)
       toast.error(err.message)
     },
   })
