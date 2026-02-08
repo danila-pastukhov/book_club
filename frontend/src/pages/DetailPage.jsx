@@ -117,11 +117,11 @@ const DetailPage = ({ username, isAuthenticated }) => {
     <>
       <div className="padding-dx max-container py-9">
         <div className="flex flex-wrap justify-between items-center gap-4">
-          <h2 className="py-6 leading-normal text-2xl md:text-3xl text-[#181A2A] tracking-wide font-semibold dark:text-[#FFFFFF]">
+          <h2 className="py-6 leading-normal text-2xl md:text-3xl text-[#181A2A] tracking-wide font-semibold dark:text-[#FFFFFF] flex-1 min-w-0">
             {book.title}
           </h2>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-shrink-0">
             <Link
               to={`/books/${slug}/page`}
               className="bg-[#4B6BFB] text-white py-3 px-6 rounded-md flex gap-2"
