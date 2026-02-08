@@ -289,18 +289,27 @@ const BookPagesPage = ({ isAuthenticated }) => {
   useEffect(() => {
     if (!isAuth || !book?.content) return
 
-    // Only send when character offset changes
-    if (lastProgressRef.current.charOffset === characterOffset) return
+    // Send the "read up to" offset: on the last page the user has seen all
+    // remaining text, so report the full content length; otherwise report the
+    // start-of-next-page offset (approximated by characterOffset + currentText
+    // length, clamped to content length).
+    const readUpTo =
+      currentPage >= totalPages
+        ? book.content.length
+        : Math.min(characterOffset + (currentText?.length || 0), book.content.length)
+
+    // Only send when the effective offset changes
+    if (lastProgressRef.current.charOffset === readUpTo) return
 
     const timer = setTimeout(() => {
       updateProgressMutation.mutate({
-        character_offset: characterOffset,
+        character_offset: readUpTo,
       })
-      lastProgressRef.current = { charOffset: characterOffset }
+      lastProgressRef.current = { charOffset: readUpTo }
     }, 2000) // Increased debounce to 2 seconds like EpubReaderPage
 
     return () => clearTimeout(timer)
-  }, [characterOffset, book?.content, isAuth, updateProgressMutation])
+  }, [characterOffset, currentPage, totalPages, currentText, book?.content, isAuth, updateProgressMutation])
 
   const clearSelection = useCallback(() => {
     setSelectedTextData(null)
