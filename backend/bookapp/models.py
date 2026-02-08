@@ -510,10 +510,22 @@ class QuestTemplate(models.Model):
         ("place_rewards", "Разместить призы"),
     ]
 
+    QUEST_SCOPE_CHOICES = [
+        ("personal", "Личное"),
+        ("group", "Групповое"),
+    ]
+
     title = models.CharField(max_length=200, verbose_name="Название")
     description = models.TextField(blank=True, verbose_name="Описание")
     quest_type = models.CharField(
         max_length=50, choices=QUEST_TYPE_CHOICES, verbose_name="Тип задания"
+    )
+    quest_scope = models.CharField(
+        max_length=20,
+        choices=QUEST_SCOPE_CHOICES,
+        default="personal",
+        verbose_name="Область применения",
+        help_text="Для личных или групповых заданий",
     )
     target_count = models.PositiveIntegerField(
         verbose_name="Целевое количество",
@@ -532,7 +544,7 @@ class QuestTemplate(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.title} ({self.get_quest_type_display()}, x{self.target_count})"
+        return f"{self.title} ({self.get_quest_type_display()}, {self.get_quest_scope_display()}, x{self.target_count})"
 
 
 class UserReward(models.Model):

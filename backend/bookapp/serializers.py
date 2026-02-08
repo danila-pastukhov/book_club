@@ -613,6 +613,7 @@ class QuestTemplateSerializer(serializers.ModelSerializer):
     """Serializer for quest templates."""
 
     quest_type_display = serializers.SerializerMethodField()
+    quest_scope_display = serializers.SerializerMethodField()
 
     class Meta:
         model = QuestTemplate
@@ -622,6 +623,8 @@ class QuestTemplateSerializer(serializers.ModelSerializer):
             "description",
             "quest_type",
             "quest_type_display",
+            "quest_scope",
+            "quest_scope_display",
             "target_count",
             "is_active",
             "created_at",
@@ -630,6 +633,9 @@ class QuestTemplateSerializer(serializers.ModelSerializer):
 
     def get_quest_type_display(self, obj):
         return obj.get_quest_type_display()
+
+    def get_quest_scope_display(self, obj):
+        return obj.get_quest_scope_display()
 
 
 class UserRewardSerializer(serializers.ModelSerializer):

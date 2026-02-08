@@ -24,12 +24,17 @@ const QUEST_TYPE_OPTIONS = [
   { value: "place_rewards", label: "Разместить призы" },
 ];
 
+const QUEST_SCOPE_OPTIONS = [
+  { value: "personal", label: "Личное" },
+  { value: "group", label: "Групповое" },
+];
+
 const QuestsPage = ({ isSuperuser }) => {
   const [filter, setFilter] = useState('all');
   const [selectedGroupId, setSelectedGroupId] = useState('all');
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [questForm, setQuestForm] = useState({
-    title: "", description: "", quest_type: "read_books", target_count: 1, is_active: true,
+    title: "", description: "", quest_type: "read_books", quest_scope: "personal", target_count: 1, is_active: true,
   });
   const [rewardForm, setRewardForm] = useState({ name: "", image: null });
   const queryClient = useQueryClient();
@@ -73,7 +78,7 @@ const QuestsPage = ({ isSuperuser }) => {
     onSuccess: () => {
       toast.success("Шаблон задания создан");
       queryClient.invalidateQueries({ queryKey: ["questTemplates"] });
-      setQuestForm({ title: "", description: "", quest_type: "read_books", target_count: 1, is_active: true });
+      setQuestForm({ title: "", description: "", quest_type: "read_books", quest_scope: "personal", target_count: 1, is_active: true });
     },
     onError: (err) => toast.error(err.message),
   });
@@ -84,7 +89,7 @@ const QuestsPage = ({ isSuperuser }) => {
       toast.success("Шаблон задания обновлён");
       queryClient.invalidateQueries({ queryKey: ["questTemplates"] });
       setEditingTemplate(null);
-      setQuestForm({ title: "", description: "", quest_type: "read_books", target_count: 1, is_active: true });
+      setQuestForm({ title: "", description: "", quest_type: "read_books", quest_scope: "personal", target_count: 1, is_active: true });
     },
     onError: (err) => toast.error(err.message),
   });
@@ -251,6 +256,15 @@ const QuestsPage = ({ isSuperuser }) => {
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
+                <select
+                  value={questForm.quest_scope}
+                  onChange={(e) => setQuestForm(prev => ({ ...prev, quest_scope: e.target.value }))}
+                  className="px-4 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+                >
+                  {QUEST_SCOPE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
                 <input
                   type="number"
                   placeholder="Целевое количество"
@@ -289,7 +303,7 @@ const QuestsPage = ({ isSuperuser }) => {
                     type="button"
                     onClick={() => {
                       setEditingTemplate(null);
-                      setQuestForm({ title: "", description: "", quest_type: "read_books", target_count: 1, is_active: true });
+                      setQuestForm({ title: "", description: "", quest_type: "read_books", quest_scope: "personal", target_count: 1, is_active: true });
                     }}
                     className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                   >
@@ -314,6 +328,9 @@ const QuestsPage = ({ isSuperuser }) => {
                         <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                           {template.quest_type_display}
                         </span>
+                        <span className="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                          {template.quest_scope_display}
+                        </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">x{template.target_count}</span>
                         {!template.is_active && (
                           <span className="text-xs px-2 py-1 rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
@@ -333,6 +350,7 @@ const QuestsPage = ({ isSuperuser }) => {
                             title: template.title,
                             description: template.description || "",
                             quest_type: template.quest_type,
+                            quest_scope: template.quest_scope,
                             target_count: template.target_count,
                             is_active: template.is_active,
                           });

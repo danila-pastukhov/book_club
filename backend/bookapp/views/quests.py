@@ -256,9 +256,9 @@ def generate_daily_quests(request, slug):
                 }
             )
 
-        # Get active quest templates from DB
+        # Get active quest templates from DB for group quests
         db_templates = list(
-            QuestTemplate.objects.filter(is_active=True).values(
+            QuestTemplate.objects.filter(is_active=True, quest_scope="group").values(
                 "title", "description", "quest_type", "target_count"
             )
         )
@@ -353,9 +353,9 @@ def generate_daily_personal_quests(request):
             }
         )
 
-    # Get active quest templates from DB
+    # Get active quest templates from DB for personal quests
     db_templates = list(
-        QuestTemplate.objects.filter(is_active=True).values(
+        QuestTemplate.objects.filter(is_active=True, quest_scope="personal").values(
             "title", "description", "quest_type", "target_count"
         )
     )
