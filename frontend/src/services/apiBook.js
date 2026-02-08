@@ -566,6 +566,65 @@ export async function createRewardTemplate(data) {
   }
 }
 
+export async function deleteRewardTemplate(templateId) {
+  try {
+    const response = await api.delete(`rewards/templates/${templateId}/delete/`)
+    return response.data
+  } catch (err) {
+    if (err.response) {
+      throw new Error(err.response?.data?.error || 'Не удалось удалить шаблон приза')
+    }
+    throw new Error(err.message)
+  }
+}
+
+// Quest Templates
+
+export async function getQuestTemplates() {
+  try {
+    const response = await api.get('quest-templates/')
+    return response.data
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+export async function createQuestTemplate(data) {
+  try {
+    const response = await api.post('quest-templates/create/', data)
+    return response.data
+  } catch (err) {
+    if (err.response) {
+      throw new Error(err.response?.data?.error || 'Не удалось создать шаблон задания')
+    }
+    throw new Error(err.message)
+  }
+}
+
+export async function updateQuestTemplate(templateId, data) {
+  try {
+    const response = await api.put(`quest-templates/${templateId}/update/`, data)
+    return response.data
+  } catch (err) {
+    if (err.response) {
+      throw new Error(err.response?.data?.error || 'Не удалось обновить шаблон задания')
+    }
+    throw new Error(err.message)
+  }
+}
+
+export async function deleteQuestTemplate(templateId) {
+  try {
+    const response = await api.delete(`quest-templates/${templateId}/delete/`)
+    return response.data
+  } catch (err) {
+    if (err.response) {
+      throw new Error(err.response?.data?.error || 'Не удалось удалить шаблон задания')
+    }
+    throw new Error(err.message)
+  }
+}
+
 // User Rewards
 
 export async function getMyRewards() {

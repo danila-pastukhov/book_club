@@ -6,7 +6,6 @@ Handles reward template creation and user reward tracking.
 
 import logging
 from django.shortcuts import get_object_or_404
-from django.db import models
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -17,7 +16,6 @@ from ..models import (
     UserReward,
     UserRewardSummary,
     ReadingGroup,
-    UserToReadingGroupState,
     PrizeBoardCell,
 )
 from ..serializers import (
@@ -35,18 +33,8 @@ logger = logging.getLogger(__name__)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_reward_templates(request):
-    """Get all reward templates (global and user's groups)."""
-    user = request.user
-
-    # Get global rewards and rewards from user's groups
-    user_groups = UserToReadingGroupState.objects.filter(
-        user=user, in_reading_group=True
-    ).values_list("reading_group_id", flat=True)
-
-    templates = RewardTemplate.objects.filter(
-        models.Q(reading_group__isnull=True)
-        | models.Q(reading_group_id__in=user_groups)
-    ).select_related("created_by", "reading_group")
+    """Get all reward templates."""
+    templates = RewardTemplate.objects.all()
 
     serializer = RewardTemplateSerializer(templates, many=True)
     return Response(serializer.data)
@@ -80,9 +68,25 @@ def create_reward_template(request):
 
     serializer = RewardTemplateSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save(created_by=user)
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_reward_template(request, template_id):
+    """Delete a reward template (superuser only)."""
+    if not request.user.is_superuser:
+        return Response(
+            {"error": "Only superusers can delete reward templates"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    template = get_object_or_404(RewardTemplate, id=template_id)
+    if template.image:
+        template.image.delete(save=False)
+    template.delete()
+    return Response({"message": "Шаблон приза удалён"}, status=status.HTTP_200_OK)
 
 
 # User Rewards

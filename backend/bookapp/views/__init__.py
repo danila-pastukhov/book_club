@@ -72,12 +72,16 @@ from .notifications import (
 # Import quest views
 from .quests import (
     create_quest,
+    create_quest_template,
+    delete_quest_template,
     generate_daily_personal_quests,
     generate_daily_quests,
     get_group_quests,
     get_my_quests,
     get_quest_progress,
+    get_quest_templates,
     get_quests,
+    update_quest_template,
 )
 
 # Import reading progress views
@@ -94,6 +98,7 @@ from .reviews import create_book_review, get_book_reviews
 # Import reward views
 from .rewards import (
     create_reward_template,
+    delete_reward_template,
     get_my_reward_placements,
     get_my_reward_summaries,
     get_my_rewards,
@@ -173,6 +178,7 @@ __all__ = [
     # Rewards
     "get_reward_templates",
     "create_reward_template",
+    "delete_reward_template",
     "get_my_rewards",
     "get_my_reward_summaries",
     "get_my_reward_placements",
@@ -186,6 +192,11 @@ __all__ = [
     "generate_daily_personal_quests",
     "get_quest_progress",
     "get_my_quests",
+    # Quest Templates
+    "get_quest_templates",
+    "create_quest_template",
+    "update_quest_template",
+    "delete_quest_template",
     # Prize Board
     "get_prize_board",
     "get_user_prize_board",

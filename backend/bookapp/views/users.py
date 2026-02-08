@@ -36,10 +36,9 @@ def update_user_profile(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_username(request):
-    """Get the authenticated user's username."""
+    """Get the authenticated user's username and superuser status."""
     user = request.user
-    username = user.username
-    return Response({"username": username})
+    return Response({"username": user.username, "is_superuser": user.is_superuser})
 
 
 @api_view(["GET"])

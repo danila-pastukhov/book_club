@@ -165,6 +165,11 @@ urlpatterns = [
         views.create_reward_template,
         name="create_reward_template",
     ),
+    path(
+        "rewards/templates/<int:template_id>/delete/",
+        views.delete_reward_template,
+        name="delete_reward_template",
+    ),
     # Gamification - User Rewards
     path("rewards/my/", views.get_my_rewards, name="get_my_rewards"),
     path(
@@ -204,6 +209,23 @@ urlpatterns = [
         "quests/daily/personal/",
         views.generate_daily_personal_quests,
         name="generate_daily_personal_quests",
+    ),
+    # Gamification - Quest Templates
+    path("quest-templates/", views.get_quest_templates, name="get_quest_templates"),
+    path(
+        "quest-templates/create/",
+        views.create_quest_template,
+        name="create_quest_template",
+    ),
+    path(
+        "quest-templates/<int:template_id>/update/",
+        views.update_quest_template,
+        name="update_quest_template",
+    ),
+    path(
+        "quest-templates/<int:template_id>/delete/",
+        views.delete_quest_template,
+        name="delete_quest_template",
     ),
     # Gamification - Prize Board
     path("groups/<slug:slug>/board/", views.get_prize_board, name="get_prize_board"),

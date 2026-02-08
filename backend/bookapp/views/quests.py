@@ -20,6 +20,7 @@ from ..models import (
     Quest,
     QuestCompletion,
     QuestProgress,
+    QuestTemplate,
     ReadingGroup,
     RewardTemplate,
     UserToReadingGroupState,
@@ -28,6 +29,7 @@ from ..serializers import (
     QuestCompletionSerializer,
     QuestProgressSerializer,
     QuestSerializer,
+    QuestTemplateSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -152,6 +154,62 @@ def get_group_quests(request, slug):
         )
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_quest_templates(request):
+    """Get all quest templates."""
+    templates = QuestTemplate.objects.all()
+    serializer = QuestTemplateSerializer(templates, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_quest_template(request):
+    """Create a quest template (superuser only)."""
+    if not request.user.is_superuser:
+        return Response(
+            {"error": "Only superusers can manage quest templates"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    serializer = QuestTemplateSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def update_quest_template(request, template_id):
+    """Update a quest template (superuser only)."""
+    if not request.user.is_superuser:
+        return Response(
+            {"error": "Only superusers can manage quest templates"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    template = get_object_or_404(QuestTemplate, id=template_id)
+    serializer = QuestTemplateSerializer(template, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_quest_template(request, template_id):
+    """Delete a quest template (superuser only)."""
+    if not request.user.is_superuser:
+        return Response(
+            {"error": "Only superusers can manage quest templates"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    template = get_object_or_404(QuestTemplate, id=template_id)
+    template.delete()
+    return Response({"message": "Шаблон задания удалён"}, status=status.HTTP_200_OK)
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def generate_daily_quests(request, slug):
@@ -198,50 +256,27 @@ def generate_daily_quests(request, slug):
                 }
             )
 
-        # Quest templates
-        import random
+        # Get active quest templates from DB
+        db_templates = list(
+            QuestTemplate.objects.filter(is_active=True).values(
+                "title", "description", "quest_type", "target_count"
+            )
+        )
 
-        quest_templates = [
-            {
-                "title": "Читательский марафон",
-                "description": "Прочитайте книгу сегодня",
-                "quest_type": "read_books",
-                "target_count": 1,
-            },
-            {
-                "title": "Активный читатель",
-                "description": "Оставьте комментарии к книгам",
-                "quest_type": "create_comments",
-                "target_count": 3,
-            },
-            {
-                "title": "Обсуждение",
-                "description": "Ответьте на комментарии других читателей",
-                "quest_type": "reply_comments",
-                "target_count": 2,
-            },
-            {
-                "title": "Щедрость",
-                "description": "Разместите призы на доске",
-                "quest_type": "place_rewards",
-                "target_count": 1,
-            },
-            {
-                "title": "Книжный червь",
-                "description": "Прочитайте несколько книг",
-                "quest_type": "read_books",
-                "target_count": 2,
-            },
-            {
-                "title": "Комментатор",
-                "description": "Оставьте много комментариев",
-                "quest_type": "create_comments",
-                "target_count": 5,
-            },
-        ]
+        # Fallback to hardcoded templates if DB is empty
+        if not db_templates:
+            db_templates = [
+                {"title": "Читательский марафон", "description": "Прочитайте книгу сегодня", "quest_type": "read_books", "target_count": 1},
+                {"title": "Активный читатель", "description": "Оставьте комментарии к книгам", "quest_type": "create_comments", "target_count": 3},
+                {"title": "Обсуждение", "description": "Ответьте на комментарии других читателей", "quest_type": "reply_comments", "target_count": 2},
+                {"title": "Щедрость", "description": "Разместите призы на доске", "quest_type": "place_rewards", "target_count": 1},
+                {"title": "Книжный червь", "description": "Прочитайте несколько книг", "quest_type": "read_books", "target_count": 2},
+                {"title": "Комментатор", "description": "Оставьте много комментариев", "quest_type": "create_comments", "target_count": 5},
+            ]
 
-        # Select 3 random quests
-        selected_templates = random.sample(quest_templates, 3)
+        # Select up to 3 random quests
+        sample_size = min(3, len(db_templates))
+        selected_templates = random.sample(db_templates, sample_size)
 
         # Get all available reward templates
         available_rewards = list(RewardTemplate.objects.all())
@@ -318,48 +353,27 @@ def generate_daily_personal_quests(request):
             }
         )
 
-    quest_templates = [
-        {
-            "title": "Читательский марафон",
-            "description": "Прочитайте книгу сегодня",
-            "quest_type": "read_books",
-            "target_count": 1,
-        },
-        {
-            "title": "Активный читатель",
-            "description": "Оставьте комментарии к книгам",
-            "quest_type": "create_comments",
-            "target_count": 3,
-        },
-        {
-            "title": "Обсуждение",
-            "description": "Ответьте на комментарии других читателей",
-            "quest_type": "reply_comments",
-            "target_count": 2,
-        },
-        {
-            "title": "Щедрость",
-            "description": "Разместите призы на доске",
-            "quest_type": "place_rewards",
-            "target_count": 1,
-        },
-        {
-            "title": "Книжный червь",
-            "description": "Прочитайте несколько книг",
-            "quest_type": "read_books",
-            "target_count": 2,
-        },
-        {
-            "title": "Комментатор",
-            "description": "Оставьте много комментариев",
-            "quest_type": "create_comments",
-            "target_count": 5,
-        },
-    ]
+    # Get active quest templates from DB
+    db_templates = list(
+        QuestTemplate.objects.filter(is_active=True).values(
+            "title", "description", "quest_type", "target_count"
+        )
+    )
 
-    import random
+    # Fallback to hardcoded templates if DB is empty
+    if not db_templates:
+        db_templates = [
+            {"title": "Читательский марафон", "description": "Прочитайте книгу сегодня", "quest_type": "read_books", "target_count": 1},
+            {"title": "Активный читатель", "description": "Оставьте комментарии к книгам", "quest_type": "create_comments", "target_count": 3},
+            {"title": "Обсуждение", "description": "Ответьте на комментарии других читателей", "quest_type": "reply_comments", "target_count": 2},
+            {"title": "Щедрость", "description": "Разместите призы на доске", "quest_type": "place_rewards", "target_count": 1},
+            {"title": "Книжный червь", "description": "Прочитайте несколько книг", "quest_type": "read_books", "target_count": 2},
+            {"title": "Комментатор", "description": "Оставьте много комментариев", "quest_type": "create_comments", "target_count": 5},
+        ]
 
-    selected_templates = random.sample(quest_templates, 3)
+    # Select up to 3 random quests
+    sample_size = min(3, len(db_templates))
+    selected_templates = random.sample(db_templates, sample_size)
     available_rewards = list(RewardTemplate.objects.all())
 
     created_quests = []

@@ -500,6 +500,41 @@ class RewardTemplate(models.Model):
         return f"{self.name}"
 
 
+class QuestTemplate(models.Model):
+    """Template for daily quest generation. Replaces hardcoded quest templates."""
+
+    QUEST_TYPE_CHOICES = [
+        ("read_books", "Прочитать книги"),
+        ("create_comments", "Оставить комментарии"),
+        ("reply_comments", "Ответить на комментарии"),
+        ("place_rewards", "Разместить призы"),
+    ]
+
+    title = models.CharField(max_length=200, verbose_name="Название")
+    description = models.TextField(blank=True, verbose_name="Описание")
+    quest_type = models.CharField(
+        max_length=50, choices=QUEST_TYPE_CHOICES, verbose_name="Тип задания"
+    )
+    target_count = models.PositiveIntegerField(
+        verbose_name="Целевое количество",
+        help_text="Сколько нужно выполнить действий",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активен",
+        help_text="Неактивные шаблоны не используются при генерации",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+
+    class Meta:
+        verbose_name = "Шаблон задания"
+        verbose_name_plural = "Шаблоны заданий"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_quest_type_display()}, x{self.target_count})"
+
+
 class UserReward(models.Model):
     """Rewards earned by users through quest completion."""
 

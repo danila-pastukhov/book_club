@@ -13,6 +13,7 @@ from .models import (
     Quest,
     QuestCompletion,
     QuestProgress,
+    QuestTemplate,
     ReadingGroup,
     ReadingProgress,
     RewardTemplate,
@@ -251,3 +252,12 @@ class UserStatsAdmin(admin.ModelAdmin):
 
 
 admin.site.register(UserStats, UserStatsAdmin)
+
+
+class QuestTemplateAdmin(admin.ModelAdmin):
+    list_display = ("title", "quest_type", "target_count", "is_active", "created_at")
+    list_filter = ("quest_type", "is_active")
+    search_fields = ("title", "description")
+
+
+admin.site.register(QuestTemplate, QuestTemplateAdmin)

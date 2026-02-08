@@ -157,6 +157,13 @@ def create_reading_group(request):
     serializer = ReadingGroupSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(creator=user)
+
+        # Add creator to the group with in_reading_group=True
+        reading_group = serializer.instance
+        UserToReadingGroupState.objects.create(
+            user=user, reading_group=reading_group, in_reading_group=True
+        )
+
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

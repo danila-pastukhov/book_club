@@ -13,6 +13,7 @@ from .models import (
     Quest,
     QuestCompletion,
     QuestProgress,
+    QuestTemplate,
     ReadingGroup,
     ReadingProgress,
     RewardTemplate,
@@ -579,6 +580,29 @@ class RewardTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = RewardTemplate
         fields = ["id", "name", "image"]
+
+
+class QuestTemplateSerializer(serializers.ModelSerializer):
+    """Serializer for quest templates."""
+
+    quest_type_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuestTemplate
+        fields = [
+            "id",
+            "title",
+            "description",
+            "quest_type",
+            "quest_type_display",
+            "target_count",
+            "is_active",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def get_quest_type_display(self, obj):
+        return obj.get_quest_type_display()
 
 
 class UserRewardSerializer(serializers.ModelSerializer):

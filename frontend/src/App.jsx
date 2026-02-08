@@ -28,6 +28,7 @@ import NotFoundPage from './pages/NotFoundPage'
 const App = () => {
   const [username, setUsername] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isSuperuser, setIsSuperuser] = useState(false)
 
   const { data } = useQuery({
     queryKey: ['username'],
@@ -43,6 +44,7 @@ const App = () => {
       if (data) {
         setUsername(data.username)
         setIsAuthenticated(true)
+        setIsSuperuser(data.is_superuser || false)
       }
     },
     [data]
@@ -133,6 +135,7 @@ const App = () => {
                 <QuestsPage
                   username={username}
                   isAuthenticated={isAuthenticated}
+                  isSuperuser={isSuperuser}
                 />
               </ProtectedRoute>
             }
