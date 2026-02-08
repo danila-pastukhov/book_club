@@ -156,7 +156,7 @@ const CommentsSidebar = ({
         {error && !isLoading && (
           <div className="text-center py-8">
             <p className="text-red-500 dark:text-red-400 mb-2">
-              Failed to load comments
+              Не удалось загрузить комментарии
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
           </div>
@@ -170,9 +170,9 @@ const CommentsSidebar = ({
               className="mx-auto text-gray-300 dark:text-gray-600 mb-3"
             />
             <p className="text-gray-500 dark:text-gray-400 mb-1">
-              No{' '}
-              {commentType === 'personal' ? 'personal notes' : 'group comments'}{' '}
-              yet
+              Нет{' '}
+              {commentType === 'personal' ? 'личных заметок' : 'групповых комментариев'}{' '}
+              пока что
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-500">
               {commentType === 'personal'
