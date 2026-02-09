@@ -109,7 +109,6 @@ from .rewards import (
 
 # Import user management views
 from .users import (
-    get_user,
     get_user_books,
     get_user_stats,
     get_userinfo,
@@ -128,7 +127,6 @@ __all__ = [
     # Users
     "get_username",
     "get_userinfo",
-    "get_user",
     "get_user_books",
     "update_user_profile",
     "get_user_stats",

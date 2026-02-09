@@ -72,17 +72,6 @@ def get_user_books(request, username):
     return Response(serializer.data)
 
 
-@api_view(["GET"])
-def get_user(request, email):
-    """Get user information by email address."""
-    User = get_user_model()
-    try:
-        existing_user = User.objects.get(email=email)
-        serializer = SimpleAuthorSerializer(existing_user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    except User.DoesNotExist:
-        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

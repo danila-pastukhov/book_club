@@ -43,7 +43,6 @@ urlpatterns = [
     path("get_username", views.get_username, name="get_username"),
     path("get_userinfo/<str:username>", views.get_userinfo, name="get_userinfo"),
     path("users/<str:username>/books/", views.get_user_books, name="get_user_books"),
-    path("get_user/<str:email>", views.get_user, name="get_user"),
     path("groups/<slug:slug>", views.get_reading_group, name="get_reading_group"),
     path(
         "groups/<slug:slug>/books/reading/",
