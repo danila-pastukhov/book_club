@@ -306,7 +306,7 @@ def kick_user_from_group(request, pk, user_id):
     return Response(serializer.data)
 
 
-@api_view(["POST"])
+@api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_reading_group(request, pk):
     reading_group = get_object_or_404(ReadingGroup, id=pk)

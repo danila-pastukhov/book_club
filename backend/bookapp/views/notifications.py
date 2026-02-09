@@ -69,7 +69,7 @@ def create_notification(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["POST"])
+@api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_notification(request, pk):
     notification = get_object_or_404(Notification, id=pk)
@@ -83,7 +83,7 @@ def delete_notification(request, pk):
             status=status.HTTP_403_FORBIDDEN,
         )
     notification.delete()
-    
+
     return Response(
         {"message": "Сообщение успешно удалено"}, status=status.HTTP_204_NO_CONTENT
     )

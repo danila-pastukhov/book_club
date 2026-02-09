@@ -267,7 +267,7 @@ export async function updateReadingGroup(data, id) {
 
 export async function deleteBook(id) {
   try {
-    const response = await api.post(`delete_book/${id}/`)
+    const response = await api.delete(`delete_book/${id}/`)
     return response.data
   } catch (err) {
     if (err.response) {
@@ -280,7 +280,7 @@ export async function deleteBook(id) {
 
 export async function deleteNotification(id) {
   try {
-    const response = await api.post(`delete_notification/${id}/`)
+    const response = await api.delete(`delete_notification/${id}/`)
     return response.data
   } catch (err) {
     if (err.response) {
@@ -295,7 +295,7 @@ export async function deleteNotification(id) {
 
 export async function deleteReadingGroup(id) {
   try {
-    const response = await api.post(`delete_group/${id}/`)
+    const response = await api.delete(`delete_group/${id}/`)
     return response.data
   } catch (err) {
     if (err.response) {
