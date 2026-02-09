@@ -7,6 +7,7 @@ Handles book CRUD operations, EPUB file processing, and chapter retrieval.
 import logging
 import os
 import tempfile
+from typing import Tuple, Optional, Dict, Any
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db import models
@@ -22,6 +23,71 @@ from ..epub_handler import EPUBHandler, parse_epub_file
 from .utils import local_epub_path, AnyListPagination
 
 logger = logging.getLogger(__name__)
+
+
+def process_and_validate_epub(epub_source) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """
+    Validates and parses an EPUB file from various sources.
+    
+    Args:
+        epub_source: Either:
+            - A file path (str) - for already saved files
+            - A FileField - Django model field with save() method
+            - An UploadedFile - from request.FILES
+            
+    Returns:
+        Tuple of (epub_data dict, error_message str):
+            - On success: ({"table_of_contents": [...], "full_text": "..."}, None)
+            - On failure: (None, "Error description")
+    """
+    temp_path = None
+    should_cleanup = False
+    
+    try:
+        # Determine the file path based on source type
+        if isinstance(epub_source, str):
+            # Already a file path
+            file_path = epub_source
+        elif hasattr(epub_source, 'path'):
+            # Django FileField with path attribute
+            file_path = epub_source.path
+        else:
+            # UploadedFile from request.FILES - create temp file
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".epub")
+            temp_path = temp_file.name
+            should_cleanup = True
+            
+            for chunk in epub_source.chunks():
+                temp_file.write(chunk)
+            temp_file.close()
+            
+            # Reset file pointer for potential reuse
+            epub_source.seek(0)
+            
+            file_path = temp_path
+        
+        # Validate EPUB structure and safety
+        is_valid, error_message = validate_epub_file_complete(file_path)
+        
+        if not is_valid:
+            return None, f"Invalid EPUB file: {error_message}"
+        
+        # Parse EPUB file to extract metadata and content
+        epub_data = parse_epub_file(file_path)
+        
+        return epub_data, None
+        
+    except Exception as e:
+        logger.error(f"Error processing EPUB file: {e}")
+        return None, f"Failed to process EPUB file: {str(e)}"
+        
+    finally:
+        # Clean up temporary file if created
+        if should_cleanup and temp_path:
+            try:
+                os.remove(temp_path)
+            except OSError as e:
+                logger.warning(f"Failed to remove temp EPUB file {temp_path}: {e}")
 
 
 @api_view(["GET"])
@@ -242,49 +308,26 @@ def create_book(request):
 
         # If EPUB file was uploaded, process it
         if book.content_type == "epub" and book.epub_file:
-            try:
-                # Validate EPUB file structure and safety
-                with local_epub_path(book.epub_file) as epub_path:
-                    if not epub_path:
-                        raise ValueError("EPUB file not found")
-
-                    is_valid, error_message = validate_epub_file_complete(epub_path)
-
-                    if not is_valid:
-                        logger.warning(
-                            f"Invalid EPUB file uploaded by user {user.username}: {error_message}"
-                        )
-                        # Delete uploaded files from S3/MinIO before deleting the book record
-                        if book.epub_file:
-                            book.epub_file.delete(save=False)
-                        if book.featured_image:
-                            book.featured_image.delete(save=False)
-                        book.delete()
-                        return Response(
-                            {"error": f"Invalid EPUB file: {error_message}"},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-
-                    # Parse EPUB file
-                    epub_data = parse_epub_file(epub_path)
-
-                # Update book with parsed data
-                book.table_of_contents = epub_data.get("table_of_contents", [])
-
-                # Extract full text to content field for search/preview
-                if not book.content:
-                    book.content = epub_data.get("full_text", "")[
-                        :1000
-                    ]  # Store first 1000 chars as preview
-
-                book.save()
-
-                logger.info(
-                    f"Successfully processed EPUB file for book '{book.title}' (ID: {book.id})"
+            # Validate and parse EPUB file
+            with local_epub_path(book.epub_file) as epub_path:
+                if not epub_path:
+                    # Delete uploaded files from S3/MinIO before deleting the book record
+                    if book.epub_file:
+                        book.epub_file.delete(save=False)
+                    if book.featured_image:
+                        book.featured_image.delete(save=False)
+                    book.delete()
+                    return Response(
+                        {"error": "EPUB file not found"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                
+                epub_data, error_message = process_and_validate_epub(epub_path)
+            
+            if error_message:
+                logger.warning(
+                    f"Invalid EPUB file uploaded by user {user.username}: {error_message}"
                 )
-
-            except Exception as e:
-                logger.error(f"Error processing EPUB file: {e}")
                 # Delete uploaded files from S3/MinIO before deleting the book record
                 if book.epub_file:
                     book.epub_file.delete(save=False)
@@ -292,9 +335,22 @@ def create_book(request):
                     book.featured_image.delete(save=False)
                 book.delete()
                 return Response(
-                    {"error": f"Failed to process EPUB file: {str(e)}"},
+                    {"error": error_message},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            
+            # Update book with parsed data
+            book.table_of_contents = epub_data.get("table_of_contents", [])
+            
+            # Extract full text to content field for search/preview
+            if not book.content:
+                book.content = epub_data.get("full_text", "")[:1000]
+            
+            book.save()
+            
+            logger.info(
+                f"Successfully processed EPUB file for book '{book.title}' (ID: {book.id})"
+            )
 
         # Handle hashtags
         hashtag_names = request.data.getlist("hashtags")
@@ -326,54 +382,21 @@ def update_book(request, pk):
     # If a new EPUB file was uploaded, validate and process it BEFORE saving
     epub_data = None
     if "epub_file" in request.FILES:
-        try:
-            # Get the uploaded file from request
-            uploaded_epub = request.FILES["epub_file"]
-            
-            # Create a temporary file to validate the uploaded EPUB
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".epub")
-            temp_path = temp_file.name
-            
-            try:
-                # Write uploaded file to temp location
-                for chunk in uploaded_epub.chunks():
-                    temp_file.write(chunk)
-                temp_file.close()
-                
-                # Validate EPUB file structure and safety
-                is_valid, error_message = validate_epub_file_complete(temp_path)
-                
-                if not is_valid:
-                    logger.warning(
-                        f"Invalid EPUB file uploaded for book {pk} by user {user.username}: {error_message}"
-                    )
-                    os.remove(temp_path)
-                    return Response(
-                        {"error": f"Invalid EPUB file: {error_message}"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                
-                # Parse EPUB file to extract metadata
-                epub_data = parse_epub_file(temp_path)
-                
-                logger.info(f"Successfully validated EPUB file for book update (ID: {pk})")
-                
-            finally:
-                # Clean up temp file
-                try:
-                    os.remove(temp_path)
-                except OSError:
-                    pass
-                    
-            # Reset file pointer for saving
-            uploaded_epub.seek(0)
-            
-        except Exception as e:
-            logger.error(f"Error processing EPUB file: {e}")
+        uploaded_epub = request.FILES["epub_file"]
+        
+        # Validate and parse the uploaded EPUB file
+        epub_data, error_message = process_and_validate_epub(uploaded_epub)
+        
+        if error_message:
+            logger.warning(
+                f"Invalid EPUB file uploaded for book {pk} by user {user.username}: {error_message}"
+            )
             return Response(
-                {"error": f"Failed to process EPUB file: {str(e)}"},
+                {"error": error_message},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
+        logger.info(f"Successfully validated EPUB file for book update (ID: {pk})")
 
     serializer = BookSerializer(book, data=request.data, partial=True)
 
