@@ -4,3 +4,10 @@
 
 .claude/
 *.epub
+
+
+# copilot
+
+.github
+.github/copilot-instructions.md
+ANALYSIS_REPORT.md
