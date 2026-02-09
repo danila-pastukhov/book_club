@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getNotifications, getUsername } from '@/services/apiBook'
+import { getNotifications, getUsername } from '@/services'
 import NotificationContainer from '@/ui_components/NotificationContainer'
 import PagePagination from '../ui_components/PagePagination'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'

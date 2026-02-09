@@ -6,7 +6,7 @@ import {
   createCommentReply,
   updateCommentReply,
   deleteCommentReply,
-} from '@/services/apiBook';
+} from '@/services';
 
 export const useCommentReplies = (slug, commentId, enabled = false) => {
   const queryClient = useQueryClient();

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getMyRewards, getUserRewards } from "@/services/apiBook";
+import { getMyRewards, getUserRewards } from "@/services";
 import RewardCard from "@/ui_components/RewardCard";
 import Spinner from "@/ui_components/Spinner";
 import { useSearchParams } from "react-router-dom";

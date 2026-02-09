@@ -4,7 +4,7 @@
 // import BookWriter from "@/ui_components/BookWriter";
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getBookPage } from '@/services/apiBook'
+import { getBookPage } from '@/services'
 import Spinner from '@/ui_components/Spinner'
 // import { BASE_URL } from "@/api";
 // import { HiPencilAlt } from "react-icons/hi";

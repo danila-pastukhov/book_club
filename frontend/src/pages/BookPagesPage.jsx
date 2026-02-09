@@ -6,7 +6,7 @@ import {
   getUsername,
   getReadingProgress,
   updateReadingProgress,
-} from '@/services/apiBook'
+} from '@/services'
 import SmallSpinner from '@/ui_components/SmallSpinner'
 import CommentButton from '@/ui_components/CommentButton'
 import CommentForm from '@/ui_components/CommentForm'

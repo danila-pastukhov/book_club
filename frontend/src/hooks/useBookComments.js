@@ -8,7 +8,7 @@ import {
   updateBookComment,
   deleteBookComment,
   getUserReadingGroups,
-} from '@/services/apiBook'
+} from '@/services'
 
 export const useBookComments = (slug, isAuthenticated = true) => {
   const [searchParams, setSearchParams] = useSearchParams()

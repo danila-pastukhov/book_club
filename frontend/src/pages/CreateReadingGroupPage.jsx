@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 // } from "@/components/ui/select";
 import InputError from "@/ui_components/InputError";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createReadingGroup, updateReadingGroup } from "@/services/apiBook";
+import { createReadingGroup, updateReadingGroup } from "@/services";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import SmallSpinner from "@/ui_components/SmallSpinner";

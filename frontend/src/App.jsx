@@ -21,7 +21,7 @@ import PrizeBoardPage from './pages/PrizeBoardPage'
 import UserPrizeBoardPage from './pages/UserPrizeBoardPage'
 import RewardsPage from './pages/RewardsPage'
 import { useEffect, useState } from 'react'
-import { getUsername } from './services/apiBook'
+import { getUsername } from './services'
 import { useQuery } from '@tanstack/react-query'
 import NotFoundPage from './pages/NotFoundPage'
 

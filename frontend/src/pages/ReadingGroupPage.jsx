@@ -6,7 +6,7 @@ import QuestCard from "@/ui_components/QuestCard";
 import BookContainer from "@/ui_components/BookContainer";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { deleteReadingGroup, getReadingGroup, addUserToGroup, removeUserFromGroup, kickUserFromGroup, getUserToReadingGroupStates, getGroupQuests, generateDailyQuests, getGroupReadingBooks, getGroupPostedBooks } from "@/services/apiBook";
+import { deleteReadingGroup, getReadingGroup, addUserToGroup, removeUserFromGroup, kickUserFromGroup, getUserToReadingGroupStates, getGroupQuests, generateDailyQuests, getGroupReadingBooks, getGroupPostedBooks } from "@/services";
 import { MdPersonRemove } from "react-icons/md";
 import Spinner from "@/ui_components/Spinner";
 import { resolveMediaUrl } from "@/api";

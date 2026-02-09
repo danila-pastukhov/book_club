@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { FormatDateWithHour } from "@/services/formatDate";
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteNotification, getUserToReadingGroupStates, getNotification, confirmUserToGroup, createNotification } from '@/services/apiBook'
+import { deleteNotification, getUserToReadingGroupStates, getNotification, confirmUserToGroup, createNotification } from '@/services'
 import { useState } from "react";
 import { set } from "react-hook-form";
 import { decl } from "postcss";

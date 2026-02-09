@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { registerUser, updateProfile } from '@/services/apiBook'
+import { registerUser, updateProfile } from '@/services'
 import InputError from '@/ui_components/InputError'
 import SmallSpinner from '@/ui_components/SmallSpinner'
 import SmallSpinnerText from '@/ui_components/SmallSpinnerText'

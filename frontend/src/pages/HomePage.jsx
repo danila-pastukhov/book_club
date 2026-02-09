@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getPublicBooks, getReadingGroups, getRecentReadingBooks } from "@/services/apiBook";
+import { getPublicBooks, getReadingGroups, getRecentReadingBooks } from "@/services";
 import BookContainer from "@/ui_components/BookContainer";
 import Header from "@/ui_components/Header";
 import PagePagination from "../ui_components/PagePagination";

@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getGroupQuests, generateDailyQuests, getReadingGroup, getUserToReadingGroupStates } from "@/services/apiBook";
+import { getGroupQuests, generateDailyQuests, getReadingGroup, getUserToReadingGroupStates } from "@/services";
 import QuestCard from "@/ui_components/QuestCard";
 import Spinner from "@/ui_components/Spinner";
 import { toast } from "react-toastify";

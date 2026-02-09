@@ -1,4 +1,4 @@
-import { getUserInfo, getUserRewards, getUserStats, getUserToReadingGroupStates, getUserBooks } from "@/services/apiBook";
+import { getUserInfo, getUserRewards, getUserStats, getUserToReadingGroupStates, getUserBooks } from "@/services";
 import BookContainer from "@/ui_components/BookContainer";
 import Hero from "@/ui_components/Hero";
 import Spinner from "@/ui_components/Spinner";

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import InputError from "@/ui_components/InputError";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { createBook, updateBook, getUserCreatedGroups, getBook } from "@/services/apiBook";
+import { createBook, updateBook, getUserCreatedGroups, getBook } from "@/services";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import SmallSpinner from "@/ui_components/SmallSpinner";

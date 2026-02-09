@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateReadingGroup } from "@/services/apiBook";
+import { updateReadingGroup } from "@/services";
 import { toast } from "react-toastify";
 import SmallSpinner from "./SmallSpinner";
 import { resolveMediaUrl } from "@/api";

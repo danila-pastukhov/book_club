@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { createQuest, getReadingGroups, getRewardTemplates } from "@/services/apiBook";
+import { createQuest, getReadingGroups, getRewardTemplates } from "@/services";
 import Spinner from "@/ui_components/Spinner";
 
 const CreateQuestPage = () => {

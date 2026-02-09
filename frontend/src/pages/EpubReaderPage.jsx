@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ReactReader } from 'react-reader'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getBook, getBookChaptersList, getUsername, getReadingProgress, updateReadingProgress } from '@/services/apiBook'
+import { getBook, getBookChaptersList, getUsername, getReadingProgress, updateReadingProgress } from '@/services'
 import { resolveMediaUrl } from '@/api'
 
 import SmallSpinner from '@/ui_components/SmallSpinner'

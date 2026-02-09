@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getReadingGroups } from "@/services/apiBook";
+import { getReadingGroups } from "@/services";
 import ReadingGroupContainer from "@/ui_components/ReadingGroupContainer";
 import PagePagination from "../ui_components/PagePagination";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";

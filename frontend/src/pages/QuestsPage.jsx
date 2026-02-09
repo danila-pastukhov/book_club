@@ -11,7 +11,7 @@ import {
   getRewardTemplates,
   createRewardTemplate,
   deleteRewardTemplate,
-} from "@/services/apiBook";
+} from "@/services";
 import { resolveMediaUrl } from "@/api";
 import QuestCard from "@/ui_components/QuestCard";
 import Spinner from "@/ui_components/Spinner";

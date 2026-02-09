@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getBooks, searchBooksByHashtag } from "@/services/apiBook";
+import { getBooks, searchBooksByHashtag } from "@/services";
 import BookContainer from "@/ui_components/BookContainer";
 import PagePagination from "../ui_components/PagePagination";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
