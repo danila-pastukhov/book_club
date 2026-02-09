@@ -223,20 +223,6 @@ class Book(models.Model):
     def __str__(self):
         return self.title
 
-        # def save(self, *args, **kwargs):
-        #     base_slug = slugify(self.title)
-        #     slug = base_slug
-        #     num = 1
-        #     while Book.objects.filter(slug=slug).exists():
-        #         slug = f"{base_slug}-{num}"
-        #         num += 1
-        #     self.slug = slug
-
-        #     if not self.is_draft and self.published_date is None:
-        #         self.published_date = timezone.now()
-
-        super().save(*args, **kwargs)
-
     def save(self, *args, **kwargs):
         # Transliterate title to Latin characters before slugifying
         transliterated_title = transliterate(self.title)

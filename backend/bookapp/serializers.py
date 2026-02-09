@@ -25,11 +25,6 @@ from .models import (
 from .validators import validate_no_profanity
 
 
-def text_formating(content):
-    processed_data = content
-    return processed_data
-
-
 class UpdateUserProfileSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(
         required=False, allow_null=True, write_only=True
@@ -161,9 +156,7 @@ class BookSerializer(serializers.ModelSerializer):
         else:
             # For plain text books, use existing formatting
             content = representation.get("content", "")
-            representation["processed_content"] = (
-                text_formating(content) if content else ""
-            )
+            representation["processed_content"] = content
             representation["has_epub"] = False
 
         return representation
