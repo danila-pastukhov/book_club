@@ -90,8 +90,17 @@ def get_group_posted_books(request, slug):
 
 
 @api_view(["GET"])
-def reading_group_list(request, amount):
+def reading_group_list(request, amount=None):
     # Optimize: select_related for creator, prefetch_related for users
+    if amount is None:
+        amount = request.query_params.get("amount", 20)
+    try:
+        amount = int(amount)
+    except (TypeError, ValueError):
+        return Response(
+            {"error": "Invalid amount"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     reading_groups = (
         ReadingGroup.objects.select_related("creator")
         .prefetch_related(

@@ -23,8 +23,18 @@ logger = logging.getLogger(__name__)
 
 
 @api_view(["GET"])
-def book_list(request, amount):
+def book_list(request, amount=None):
     user = request.user if request.user.is_authenticated else None
+
+    if amount is None:
+        amount = request.query_params.get("amount", 20)
+    try:
+        amount = int(amount)
+    except (TypeError, ValueError):
+        return Response(
+            {"error": "Invalid amount"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     if user:
         user_group_ids = UserToReadingGroupState.objects.filter(
