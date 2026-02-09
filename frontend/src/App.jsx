@@ -20,123 +20,60 @@ import CreateQuestPage from './pages/CreateQuestPage'
 import PrizeBoardPage from './pages/PrizeBoardPage'
 import UserPrizeBoardPage from './pages/UserPrizeBoardPage'
 import RewardsPage from './pages/RewardsPage'
-import { useEffect, useState } from 'react'
-import { getUsername } from './services'
-import { useQuery } from '@tanstack/react-query'
 import NotFoundPage from './pages/NotFoundPage'
 
 const App = () => {
-  const [username, setUsername] = useState(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isSuperuser, setIsSuperuser] = useState(false)
-
-  const { data } = useQuery({
-    queryKey: ['username'],
-    queryFn: getUsername,
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  })
-
-  useEffect(
-    function () {
-      if (data) {
-        setUsername(data.username)
-        setIsAuthenticated(true)
-        setIsSuperuser(data.is_superuser || false)
-      }
-    },
-    [data]
-  )
 
   return (
     <BrowserRouter>
       <Routes>
         <Route
           path="/"
-          element={
-            <AppLayout
-              isAuthenticated={isAuthenticated}
-              username={username}
-              setUsername={setUsername}
-              setIsAuthenticated={setIsAuthenticated}
-            />
-          }
+          element={<AppLayout />}
         >
           <Route index element={<HomePage />} />
           <Route path="*" element={<NotFoundPage />} />
           <Route
             path="profile/:username"
-            element={<ProfilePage authUsername={username} />}
+            element={<ProfilePage />}
           />
           <Route
             path="profile/:username/board"
             element={
               <ProtectedRoute>
-                <UserPrizeBoardPage
-                  username={username}
-                  isAuthenticated={isAuthenticated}
-                />
+                <UserPrizeBoardPage />
               </ProtectedRoute>
             }
           />
           <Route
             path="books/:slug"
-            element={
-              <DetailPage
-                username={username}
-                isAuthenticated={isAuthenticated}
-              />
-            }
+            element={<DetailPage />}
           />
           <Route
             path="groups/:slug"
             element={
               <ProtectedRoute>
-                <ReadingGroupPage
-                  username={username}
-                  isAuthenticated={isAuthenticated}
-                />
+                <ReadingGroupPage />
               </ProtectedRoute>
             }
           />
           <Route
             path="groups"
-            element={
-              <AllReadingGroupsPage
-                username={username}
-                isAuthenticated={isAuthenticated}
-              />
-            }
+            element={<AllReadingGroupsPage />}
           />
           <Route
             path="books"
-            element={
-              <AllBooksPage
-                username={username}
-                isAuthenticated={isAuthenticated}
-              />
-            }
+            element={<AllBooksPage />}
           />
           <Route
             path="notifications"
-            element={
-              <NotificationsPage
-                username={username}
-                isAuthenticated={isAuthenticated}
-              />
-            }
+            element={<NotificationsPage />}
           />
           <Route
             path="quests"
             element={
               <ProtectedRoute>
-                <QuestsPage
-                  username={username}
-                  isAuthenticated={isAuthenticated}
-                  isSuperuser={isSuperuser}
-                />
+                <QuestsPage />
               </ProtectedRoute>
             }
           />
@@ -144,10 +81,7 @@ const App = () => {
             path="quests/create"
             element={
               <ProtectedRoute>
-                <CreateQuestPage
-                  username={username}
-                  isAuthenticated={isAuthenticated}
-                />
+                <CreateQuestPage />
               </ProtectedRoute>
             }
           />
@@ -155,10 +89,7 @@ const App = () => {
             path="groups/:slug/quests"
             element={
               <ProtectedRoute>
-                <GroupQuestsPage
-                  username={username}
-                  isAuthenticated={isAuthenticated}
-                />
+                <GroupQuestsPage />
               </ProtectedRoute>
             }
           />
@@ -166,10 +97,7 @@ const App = () => {
             path="rewards"
             element={
               <ProtectedRoute>
-                <RewardsPage
-                  username={username}
-                  isAuthenticated={isAuthenticated}
-                />
+                <RewardsPage />
               </ProtectedRoute>
             }
           />
@@ -178,7 +106,7 @@ const App = () => {
             path="create_book"
             element={
               <ProtectedRoute>
-                <CreateBookPage isAuthenticated={isAuthenticated} />
+                <CreateBookPage />
               </ProtectedRoute>
             }
           />
@@ -186,7 +114,7 @@ const App = () => {
             path="create_group"
             element={
               <ProtectedRoute>
-                <CreateReadingGroupPage isAuthenticated={isAuthenticated} />
+                <CreateReadingGroupPage />
               </ProtectedRoute>
             }
           />
@@ -194,33 +122,18 @@ const App = () => {
             path="groups/:slug/board"
             element={
               <ProtectedRoute>
-                <PrizeBoardPage
-                  username={username}
-                  isAuthenticated={isAuthenticated}
-                />
+                <PrizeBoardPage />
               </ProtectedRoute>
             }
           />
           <Route
             path="signin"
-            element={
-              <LoginPage
-                setIsAuthenticated={setIsAuthenticated}
-                setUsername={setUsername}
-              />
-            }
+            element={<LoginPage />}
           />
         </Route>
         <Route
           path="/books/:slug/page"
-          // element={
-          //   <AppLayout2
-          //     isAuthenticated={isAuthenticated}
-          //     username={username}
-          //     setUsername={setUsername}
-          //     setIsAuthenticated={setIsAuthenticated}
-          //   />
-          // }
+          //element={<AppLayout2 />}
         >
           <Route index element={<BookPagesPage />} />
         </Route>

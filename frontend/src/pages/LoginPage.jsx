@@ -3,25 +3,26 @@ import { Label } from "@/components/ui/label";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import { getUsername, signin } from "@/services";
+import { signin } from "@/services";
 import { toast } from "react-toastify";
 import SmallSpinner from "@/ui_components/SmallSpinner";
 import InputError from "@/ui_components/InputError";
 import SmallSpinnerText from "@/ui_components/SmallSpinnerText";
+import { useAuth } from "@/context/AuthContext";
 
-const LoginPage = ({setIsAuthenticated, setUsername}) => {
+const LoginPage = () => {
   const { register, handleSubmit, formState } = useForm();
   const { errors } = formState;
   const location = useLocation()
   const navigate = useNavigate()
+  const { login } = useAuth();
 
   const mutation = useMutation({
     mutationFn: (data) => signin(data),
     onSuccess: (response) => {
         localStorage.setItem("access", response.access)
         localStorage.setItem("refresh", response.refresh)
-        setIsAuthenticated(true)
-        getUsername().then(res => setUsername(res.username))
+        login(); // Инвалидируем React Query кэш для запроса username
         toast.success("Вы успешно вошли.");
         const from = location?.state?.from?.pathname || "/"
         navigate(from, {replace:true})

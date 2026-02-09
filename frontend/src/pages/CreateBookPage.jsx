@@ -22,8 +22,10 @@ import SmallSpinnerText from "@/ui_components/SmallSpinnerText";
 import LoginPage from "./LoginPage";
 import { resolveMediaUrl } from "@/api";
 import Spinner from "@/ui_components/Spinner";
+import { useAuth } from "@/context/AuthContext";
 
-const CreateBookPage = ({ book, isAuthenticated }) => {
+const CreateBookPage = ({ book }) => {
+  const { isAuthenticated } = useAuth();
   // If book is passed (edit mode), load full book data with all fields including content
   const {
     data: fullBook,

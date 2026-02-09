@@ -19,8 +19,10 @@ import { useNavigate } from "react-router-dom";
 import SmallSpinner from "@/ui_components/SmallSpinner";
 import SmallSpinnerText from "@/ui_components/SmallSpinnerText";
 import LoginPage from "./LoginPage";
+import { useAuth } from "@/context/AuthContext";
 
-const CreateReadingGroupPage = ({ reading_group, isAuthenticated }) => {
+const CreateReadingGroupPage = ({ reading_group }) => {
+  const { isAuthenticated } = useAuth();
   const { register, handleSubmit, formState, setValue } = useForm({
     defaultValues: reading_group ? reading_group : {},
   });

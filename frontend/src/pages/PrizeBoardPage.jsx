@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getPrizeBoard, placeRewardOnBoard, removeRewardFromBoard, getMyRewards, getMyRewardPlacements } from "@/services";
 import PrizeBoard from "@/ui_components/PrizeBoard";
 import Spinner from "@/ui_components/Spinner";
+import { useAuth } from "@/context/AuthContext";
 
 
-const PrizeBoardPage = ({ username }) => {
+const PrizeBoardPage = () => {
+  const { username } = useAuth();
   const { slug } = useParams();
   const queryClient = useQueryClient();
 

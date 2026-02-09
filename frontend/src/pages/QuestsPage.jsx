@@ -16,6 +16,7 @@ import { resolveMediaUrl } from "@/api";
 import QuestCard from "@/ui_components/QuestCard";
 import Spinner from "@/ui_components/Spinner";
 import { toast } from "react-toastify";
+import { useAuth } from "@/context/AuthContext";
 
 const QUEST_TYPE_OPTIONS = [
   { value: "read_books", label: "Прочитать книги" },
@@ -29,7 +30,8 @@ const QUEST_SCOPE_OPTIONS = [
   { value: "group", label: "Групповое" },
 ];
 
-const QuestsPage = ({ isSuperuser }) => {
+const QuestsPage = () => {
+  const { isSuperuser } = useAuth();
   const [filter, setFilter] = useState('all');
   const [selectedGroupId, setSelectedGroupId] = useState('all');
   const [editingTemplate, setEditingTemplate] = useState(null);

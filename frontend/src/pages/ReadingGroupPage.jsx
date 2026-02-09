@@ -18,9 +18,11 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import SmallSpinner from "@/ui_components/SmallSpinner";
 import SmallSpinnerText from "@/ui_components/SmallSpinnerText";
+import { useAuth } from "@/context/AuthContext";
 
 
-const ReadingGroupPage = ({ username, isAuthenticated }) => {
+const ReadingGroupPage = () => {
+  const { username, isAuthenticated } = useAuth();
 
   const { slug } = useParams();
   const [showModal, setShowModal] = useState(false)

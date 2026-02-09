@@ -16,8 +16,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { Link } from 'react-router-dom'
 import { FormatDate } from '@/services/formatDate'
+import { useAuth } from '@/context/AuthContext'
 
-const DetailPage = ({ username, isAuthenticated }) => {
+const DetailPage = () => {
+  const { username, isAuthenticated } = useAuth();
   const { slug } = useParams()
   const [showModal, setShowModal] = useState(false)
   const [showReviewForm, setShowReviewForm] = useState(false)

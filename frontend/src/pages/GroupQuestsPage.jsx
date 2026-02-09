@@ -4,8 +4,10 @@ import { getGroupQuests, generateDailyQuests, getReadingGroup, getUserToReadingG
 import QuestCard from "@/ui_components/QuestCard";
 import Spinner from "@/ui_components/Spinner";
 import { toast } from "react-toastify";
+import { useAuth } from "@/context/AuthContext";
 
-const GroupQuestsPage = ({ username }) => {
+const GroupQuestsPage = () => {
+  const { username } = useAuth();
   const { slug } = useParams();
   const queryClient = useQueryClient();
 

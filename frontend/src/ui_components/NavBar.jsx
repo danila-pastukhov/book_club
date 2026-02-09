@@ -4,24 +4,19 @@ import ResponsiveNavBar from "./ResponsiveNavBar";
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { IoHomeOutline } from 'react-icons/io5'
+import { useAuth } from "@/context/AuthContext";
 
 
 const NavBar = ({
   darkMode,
   handleDarkMode,
-  isAuthenticated,
-  username,
-  setIsAuthenticated,
-  setUsername,
 }) => {
   const [showNavBar, setShowNavBar] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, username, logout: authLogout } = useAuth();
 
   function logout() {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    setIsAuthenticated(false);
-    setUsername(null);
+    authLogout();
     navigate("/");
   }
 
@@ -119,8 +114,6 @@ const NavBar = ({
 
       {showNavBar && (
         <ResponsiveNavBar
-          isAuthenticated={isAuthenticated}
-          username={username}
           logout={logout}
         />
       )}

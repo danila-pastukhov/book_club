@@ -3,22 +3,17 @@ import { FaHamburger } from "react-icons/fa";
 import ResponsiveNavBar from "./ResponsiveNavBar";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const NavBar2 = ({
   darkMode,
   handleDarkMode,
-  isAuthenticated,
-  username,
-  setIsAuthenticated,
-  setUsername,
 }) => {
   const [showNavBar, setShowNavBar] = useState(false);
+  const { logout: authLogout } = useAuth();
 
   function logout() {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    setIsAuthenticated(false);
-    setUsername(null);
+    authLogout();
   }
 
   return (
@@ -40,8 +35,6 @@ const NavBar2 = ({
 
       {showNavBar && (
         <ResponsiveNavBar
-          isAuthenticated={isAuthenticated}
-          username={username}
           logout={logout}
         />
       )}

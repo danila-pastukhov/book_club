@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { getNotifications, getUsername } from '@/services'
+import { getNotifications } from '@/services'
 import NotificationContainer from '@/ui_components/NotificationContainer'
 import PagePagination from '../ui_components/PagePagination'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 
-const AllBooksPage = ( { authUsername } ) => {
+const AllBooksPage = () => {
+  const { username: authUsername } = useAuth();
   const [page, setPage] = useState(1)
   const numOfNotificationsPerPage = 9
 

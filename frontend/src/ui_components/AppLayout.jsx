@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import NavBar from "./NavBar";
 import { useTheme } from "@/context/ThemeContext";
 
-const AppLayout = ({ isAuthenticated, username, setIsAuthenticated, setUsername }) => {
+const AppLayout = () => {
   const { darkMode, toggleDarkMode } = useTheme();
 
   return (
@@ -15,10 +15,6 @@ const AppLayout = ({ isAuthenticated, username, setIsAuthenticated, setUsername 
         <NavBar
           darkMode={darkMode}
           handleDarkMode={toggleDarkMode}
-          isAuthenticated={isAuthenticated}
-          username={username}
-          setIsAuthenticated={setIsAuthenticated}
-          setUsername={setUsername}
         />
         <ToastContainer />
         <Outlet />

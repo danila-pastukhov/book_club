@@ -8,10 +8,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import SignupPage from "./SignupPage";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
-const ProfilePage = ({ authUsername }) => {
+const ProfilePage = () => {
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
+  const { username: authUsername } = useAuth();
 
   const toggleModal = () => {
     setShowModal(curr => !curr)
