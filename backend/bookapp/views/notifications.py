@@ -19,13 +19,20 @@ logger = logging.getLogger(__name__)
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def get_notification(request, id):
     notification = get_object_or_404(Notification, id=id)
+    if notification.directed_to != request.user:
+        return Response(
+            {"error": "Вы не являетесь получателем этого уведомления"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
     serializer = NotificationSerializer(notification)
     return Response(serializer.data)
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def notification_list(request, amount):
     user = request.user
     # Optimize: select_related for foreign keys accessed by NotificationSerializer
