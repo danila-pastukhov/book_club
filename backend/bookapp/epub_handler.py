@@ -22,6 +22,8 @@ class EPUBHandler:
         """
         self.epub_file_path = epub_file_path
         self.book = None
+        self._chapters = None  # Cache for parsed chapters
+        self._toc = None  # Cache for table of contents
         self._load_book()
 
     def _load_book(self):
@@ -98,6 +100,10 @@ class EPUBHandler:
         Returns:
             List of dictionaries containing chapter information
         """
+        # Return cached chapters if available
+        if self._chapters is not None:
+            return self._chapters
+
         chapters = []
 
         try:
@@ -123,6 +129,8 @@ class EPUBHandler:
         except Exception as e:
             logger.error(f"Error extracting chapters: {e}")
 
+        # Cache the result
+        self._chapters = chapters
         return chapters
 
     def get_table_of_contents(self) -> List[Dict]:
@@ -132,6 +140,10 @@ class EPUBHandler:
         Returns:
             List of dictionaries containing TOC structure
         """
+        # Return cached TOC if available
+        if self._toc is not None:
+            return self._toc
+
         toc = []
 
         try:
@@ -155,6 +167,8 @@ class EPUBHandler:
         except Exception as e:
             logger.error(f"Error extracting table of contents: {e}")
 
+        # Cache the result
+        self._toc = toc
         return toc
 
     def _parse_toc_items(self, items: List, level: int = 0) -> List[Dict]:
@@ -311,13 +325,19 @@ def parse_epub_file(epub_file_path: str) -> Dict:
         if not is_valid:
             raise ValueError(f"Invalid EPUB file: {error_msg}")
 
+        # Extract chapters once and reuse
+        chapters = handler.get_chapters()
+        
+        # Build full text from cached chapters
+        full_text = '\n\n'.join(chapter['content'] for chapter in chapters)
+
         # Extract information
         return {
             'metadata': handler.get_metadata(),
-            'chapters': handler.get_chapters(),
+            'chapters': chapters,
             'table_of_contents': handler.get_table_of_contents(),
-            'full_text': handler.get_full_text(),
-            'chapter_count': len(handler.get_chapters())
+            'full_text': full_text,
+            'chapter_count': len(chapters)
         }
 
     except Exception as e:
