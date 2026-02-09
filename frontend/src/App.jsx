@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import AppLayout from './ui_components/AppLayout'
-import AppLayout2 from './ui_components/AppLayout2'
 import HomePage from './pages/HomePage'
 import DetailPage from './pages/DetailPage'
 import ReadingGroupPage from './pages/ReadingGroupPage'
@@ -131,12 +130,7 @@ const App = () => {
             element={<LoginPage />}
           />
         </Route>
-        <Route
-          path="/books/:slug/page"
-          //element={<AppLayout2 />}
-        >
-          <Route index element={<BookPagesPage />} />
-        </Route>
+        <Route path="/books/:slug/page" element={<BookPagesPage />} />
       </Routes>
     </BrowserRouter>
   )
