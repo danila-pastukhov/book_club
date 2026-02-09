@@ -516,6 +516,9 @@ const EpubReaderPage = () => {
             <h1 className="text-xl font-semibold text-[#181A2A] dark:text-[#FFFFFF] truncate max-w-md">
               {book.title}
             </h1>
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#E8E8EA] dark:bg-[#242535] text-[#3B3C4A] dark:text-[#BABABF]">
+              epub файл
+            </span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -560,7 +563,7 @@ const EpubReaderPage = () => {
               title="Toggle comments"
             >
               <BiMessageSquareDetail size={20} />
-              <span className="max-sm:hidden">Comments</span>
+              <span className="max-sm:hidden">Комментарии</span>
               {comments && comments.length > 0 && (
                 <span className="bg-[#FFFFFF] dark:bg-[#181A2A] text-[#4B6BFB] text-xs font-semibold px-2 py-0.5 rounded-full border border-[#E8E8EA] dark:border-[#242535]">
                   {comments.length}
@@ -574,7 +577,7 @@ const EpubReaderPage = () => {
               className="flex items-center gap-2 px-4 py-2 bg-[#4B6BFB] text-white rounded-lg hover:bg-[#3554D1] dark:hover:bg-[#3554D1] transition-colors"
             >
               <FiList size={20} />
-              <span className="max-sm:hidden">Chapters</span>
+              <span className="max-sm:hidden">Главы</span>
             </button>
 
             {/* Completed indicator */}

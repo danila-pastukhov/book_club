@@ -15,10 +15,12 @@ import useBookComments from '@/hooks/useBookComments'
 import useDynamicPagination from '@/hooks/useDynamicPagination'
 import EpubReaderPage from './EpubReaderPage'
 
+import { useTheme } from '@/context/ThemeContext'
 import { IoHomeOutline } from 'react-icons/io5'
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai'
 import { BiMessageSquareDetail } from 'react-icons/bi'
 import { FiCheckCircle, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import { HiMoon, HiSun } from 'react-icons/hi'
 
 // Normalize whitespace: collapse multiple spaces/newlines to single space
 const normalizeWhitespace = (str) => str.replace(/\s+/g, ' ').trim()
@@ -102,6 +104,9 @@ const BookPagesPage = ({ isAuthenticated }) => {
   const [showCommentButton, setShowCommentButton] = useState(false)
   const [commentButtonPosition, setCommentButtonPosition] = useState({ x: 0, y: 0 })
   const [selectedTextData, setSelectedTextData] = useState(null)
+
+  // Get theme context
+  const { darkMode, toggleDarkMode } = useTheme()
 
   const {
     data: book,
@@ -459,6 +464,16 @@ const BookPagesPage = ({ isAuthenticated }) => {
                 <AiOutlinePlus size={18} />
               </button>
             </div>
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="flex items-center gap-2 px-3 py-2 border border-[#E8E8EA] dark:border-[#242535] rounded-lg bg-[#FFFFFF] dark:bg-[#1F2136] text-[#3B3C4A] dark:text-[#BABABF] hover:text-[#4B6BFB] dark:hover:text-[#4B6BFB] transition-colors"
+              title={darkMode ? "Светлая тема" : "Темная тема"}
+            >
+              {darkMode ? <HiSun size={20} /> : <HiMoon size={20} />}
+            </button>
+
 
             {/* Comments toggle */}
             <button
