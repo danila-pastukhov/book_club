@@ -82,9 +82,8 @@ def delete_notification(request, pk):
             },
             status=status.HTTP_403_FORBIDDEN,
         )
-
-    # figure out why the above check does not work properly
     notification.delete()
+    
     return Response(
         {"message": "Сообщение успешно удалено"}, status=status.HTTP_204_NO_CONTENT
     )
