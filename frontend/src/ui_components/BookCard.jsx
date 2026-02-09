@@ -1,6 +1,5 @@
 import Badge from "./Badge";
 import CardFooter from "./CardFooter";
-import thumbnail from "../images/design_vii.jpg";
 import { Link } from "react-router-dom";
 import { resolveMediaUrl } from "@/api";
 
@@ -57,10 +56,14 @@ const BookCard = ({book, showVisibilityLabels = false}) => {
           {book.title}
         </h3>
       </Link>
-
-      {book.book_author && (
+      {/* if author is empty, display username */}
+      {book.book_author ? (
         <p className="text-sm text-[#3B3C4A] dark:text-[#BABABF] -mt-2">
           {book.book_author}
+        </p>
+      ) : (
+        <p className="text-sm text-[#3B3C4A] dark:text-[#BABABF] -mt-2">
+          {book.author.username || "Неизвестный автор"}
         </p>
       )}
 

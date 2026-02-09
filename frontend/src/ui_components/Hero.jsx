@@ -1,7 +1,3 @@
-import { FaInstagram } from 'react-icons/fa'
-import { FaFacebookF } from 'react-icons/fa'
-import { BsTwitterX } from 'react-icons/bs'
-import { FaYoutube } from 'react-icons/fa'
 import { HiPencilAlt } from 'react-icons/hi'
 import { resolveMediaUrl } from '@/api'
 

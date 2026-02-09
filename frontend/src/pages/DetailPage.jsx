@@ -176,9 +176,14 @@ const DetailPage = ({ username, isAuthenticated }) => {
                 </Link>
               ))}
             </div>
-            {book.book_author && (
+            {/* if author is empty, display username */}
+            {book.book_author ? (
               <p className="text-[15px] text-[#3B3C4A] dark:text-[#BABABF] mb-4">
                 <span className="font-semibold">Автор:</span> {book.book_author}
+              </p>
+            ) : (
+              <p className="text-[15px] text-[#3B3C4A] dark:text-[#BABABF] mb-4">
+                <span className="font-semibold">Автор:</span> {book.author.username || "Неизвестный автор"}
               </p>
             )}
             <h3 className="text-xl font-semibold text-[#181A2A] dark:text-white mb-2">
