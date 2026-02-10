@@ -11,6 +11,7 @@ from typing import Tuple, Optional, Dict, Any
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db import models
+from django.db.models import Avg
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -113,9 +114,9 @@ def book_list(request, amount=None):
             models.Q(visibility="public")
             | models.Q(visibility="personal", author=user)
             | models.Q(visibility="group", reading_group_id__in=user_group_ids)
-        ).select_related('author', 'reading_group')
+        ).select_related('author', 'reading_group').annotate(average_rating=Avg("bookreview__stars_amount"))
     else:
-        books = Book.objects.filter(visibility="public").select_related('author', 'reading_group')
+        books = Book.objects.filter(visibility="public").select_related('author', 'reading_group').annotate(average_rating=Avg("bookreview__stars_amount"))
     paginator = AnyListPagination(amount=amount)
     paginated_books = paginator.paginate_queryset(books, request)
     serializer = BookSerializerInfo(paginated_books, many=True)
@@ -125,7 +126,8 @@ def book_list(request, amount=None):
 @api_view(["GET"])
 def public_book_list(request, amount):
     # Optimize: select_related for author and reading_group foreign keys
-    books = Book.objects.filter(visibility="public").select_related('author', 'reading_group')
+    # Order by creation date descending to show newest books first
+    books = Book.objects.filter(visibility="public").select_related('author', 'reading_group').annotate(average_rating=Avg("bookreview__stars_amount")).order_by('-created_at')
     paginator = AnyListPagination(amount=amount)
     paginated_books = paginator.paginate_queryset(books, request)
     serializer = BookSerializerInfo(paginated_books, many=True)
@@ -508,7 +510,7 @@ def search_books_by_hashtag(request):
     else:
         books = books.filter(visibility="public")
 
-    books = books.select_related("author", "reading_group").prefetch_related("hashtags").distinct()
+    books = books.select_related("author", "reading_group").prefetch_related("hashtags").annotate(average_rating=Avg("bookreview__stars_amount")).distinct()
 
     amount = int(request.query_params.get("amount", 9))
     paginator = AnyListPagination(amount=amount)

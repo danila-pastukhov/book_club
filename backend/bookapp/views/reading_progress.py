@@ -6,6 +6,7 @@ Handles user reading progress for books, including progress updates and completi
 
 import logging
 
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -148,6 +149,13 @@ def get_recent_reading_books(request, amount):
     paginator = AnyListPagination(amount=amount)
     paginated_progress = paginator.paginate_queryset(progress_qs, request)
 
-    books = [progress.book for progress in paginated_progress]
+    book_ids = [progress.book_id for progress in paginated_progress]
+    books_with_rating = {
+        b.id: b
+        for b in Book.objects.filter(id__in=book_ids).annotate(
+            average_rating=Avg("bookreview__stars_amount")
+        )
+    }
+    books = [books_with_rating[progress.book_id] for progress in paginated_progress]
     serializer = BookSerializerInfo(books, many=True)
     return paginator.get_paginated_response(serializer.data)

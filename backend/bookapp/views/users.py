@@ -5,6 +5,7 @@ Handles user profile, information retrieval, and user-related operations.
 """
 
 from django.contrib.auth import get_user_model
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -62,11 +63,11 @@ def get_user_books(request, username):
 
     # Optimize: select_related for author (which is 'user' here) and reading_group
     if request.user.is_authenticated and request.user == user:
-        books = Book.objects.filter(author=user).select_related("author", "reading_group")
+        books = Book.objects.filter(author=user).select_related("author", "reading_group").annotate(average_rating=Avg("bookreview__stars_amount"))
     else:
         books = Book.objects.filter(author=user, visibility="public").select_related(
             "author", "reading_group"
-        )
+        ).annotate(average_rating=Avg("bookreview__stars_amount"))
 
     serializer = BookSerializerInfo(books, many=True)
     return Response(serializer.data)

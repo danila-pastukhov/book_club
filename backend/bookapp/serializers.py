@@ -219,6 +219,10 @@ class BookSerializerInfo(serializers.ModelSerializer):
     
 
     def get_average_rating(self, instance):
+        # Use annotation if available (optimized path from queryset)
+        if hasattr(instance, "average_rating"):
+            return instance.average_rating
+        # Fallback for single objects without annotation
         rating = BookReview.objects.filter(book=instance).aggregate(
             avg=Avg("stars_amount")
         )
@@ -290,6 +294,13 @@ class UserWithStatusSerializer(serializers.ModelSerializer):
         """Get the in_reading_group status from the through table."""
         reading_group_id = self.context.get("reading_group_id")
         if reading_group_id:
+            # Use prefetch cache if available (optimized path)
+            if hasattr(obj, "_prefetched_objects_cache") and "usertoreadinggroupstate_set" in obj._prefetched_objects_cache:
+                for state in obj.usertoreadinggroupstate_set.all():
+                    if state.reading_group_id == reading_group_id:
+                        return state.in_reading_group
+                return False
+            # Fallback for cases without prefetch
             try:
                 state = UserToReadingGroupState.objects.get(
                     user=obj, reading_group_id=reading_group_id
@@ -391,7 +402,9 @@ class UserInfoSerializer(serializers.ModelSerializer):
         ]
 
     def get_author_posts(self, user):
-        books = Book.objects.filter(author=user)[:9]
+        books = Book.objects.filter(author=user).annotate(
+            average_rating=Avg("bookreview__stars_amount")
+        )[:9]
         serializer = BookSerializerInfo(books, many=True, context=self.context)
         return serializer.data
 

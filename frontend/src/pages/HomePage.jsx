@@ -84,7 +84,11 @@ const HomePage = () => {
             <Link to='/books' className="font-semibold text-xl mb-6 dark:text-white">
               Вы недавно читали
             </Link>
+            {/*Показываем недавние книги, если пользователь авторизован */}
             {hasToken ? (
+              // Вывести книги, которые пользователь недавно читал, с пагинацией
+              // если список пустой, показать сообщение "Вы еще не читали книги"
+              recentBooks.length > 0 ? (
               <>
                 <BookContainer isPending={recentPending} books={recentBooks} />
                 <PagePagination
@@ -95,6 +99,11 @@ const HomePage = () => {
                   handleSetPage={handleSetRecentPage}
                 />
               </>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Вы еще не читали книги.
+                </p>
+              )
             ) : (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Войдите, чтобы видеть последние прочитанные книги.

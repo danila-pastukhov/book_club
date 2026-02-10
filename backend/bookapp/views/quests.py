@@ -107,23 +107,36 @@ def get_group_quests(request, slug):
             end_date__gte=timezone.now(),
         ).select_related("created_by", "reward_template")
 
-        # Get progress for each quest
+        quest_ids = [q.id for q in quests]
+
+        # Prefetch: total progress per quest
+        total_counts = dict(
+            QuestProgress.objects.filter(quest_id__in=quest_ids)
+            .values("quest_id")
+            .annotate(total=models.Sum("current_count"))
+            .values_list("quest_id", "total")
+        )
+
+        # Prefetch: current user's progress
+        user_progress_map = {
+            p.quest_id: p
+            for p in QuestProgress.objects.filter(quest_id__in=quest_ids, user=user)
+        }
+
+        # Prefetch: current user's completions
+        completed_quest_ids = set(
+            QuestCompletion.objects.filter(quest_id__in=quest_ids, user=user)
+            .values_list("quest_id", flat=True)
+        )
+
+        # Build result using prefetched data
         result = []
         for quest in quests:
             if quest.participation_type == "group":
-                total_count = (
-                    QuestProgress.objects.filter(quest=quest)
-                    .aggregate(total=models.Sum("current_count"))
-                    .get("total")
-                    or 0
-                )
-                user_progress = QuestProgress.objects.filter(
-                    quest=quest, user=user
-                ).first()
+                total_count = total_counts.get(quest.id, 0) or 0
+                user_progress = user_progress_map.get(quest.id)
                 participated = bool(user_progress and user_progress.current_count > 0)
-                reward_received = QuestCompletion.objects.filter(
-                    quest=quest, user=user
-                ).exists()
+                reward_received = quest.id in completed_quest_ids
                 progress_percentage = (
                     min(100, (total_count / quest.target_count) * 100)
                     if quest.target_count > 0
@@ -136,9 +149,11 @@ def get_group_quests(request, slug):
                     "reward_received": reward_received,
                 }
             else:
-                progress, created = QuestProgress.objects.get_or_create(
-                    user=user, quest=quest, defaults={"current_count": 0}
-                )
+                progress = user_progress_map.get(quest.id)
+                if not progress:
+                    progress, created = QuestProgress.objects.get_or_create(
+                        user=user, quest=quest, defaults={"current_count": 0}
+                    )
                 progress_data = QuestProgressSerializer(progress).data
             result.append(
                 {
@@ -474,8 +489,6 @@ def get_quest_progress(request, quest_id):
 def get_my_quests(request):
     """Get all quests user is participating in with progress."""
     user = request.user
-    from django.utils import timezone
-
     now = timezone.now()
 
     personal_quests = Quest.objects.filter(
@@ -511,24 +524,33 @@ def get_my_quests(request):
         .select_related("created_by", "reward_template", "reading_group")
     )
 
+    quest_ids = [q.id for q in quests]
+
     progress_map = {
-        p.quest_id: p for p in QuestProgress.objects.filter(user=user, quest__in=quests)
+        p.quest_id: p for p in QuestProgress.objects.filter(user=user, quest_id__in=quest_ids)
     }
+
+    # Prefetch: total progress per quest (for group quests)
+    total_counts = dict(
+        QuestProgress.objects.filter(quest_id__in=quest_ids)
+        .values("quest_id")
+        .annotate(total=models.Sum("current_count"))
+        .values_list("quest_id", "total")
+    )
+
+    # Prefetch: current user's completions
+    completed_quest_ids = set(
+        QuestCompletion.objects.filter(quest_id__in=quest_ids, user=user)
+        .values_list("quest_id", flat=True)
+    )
 
     result = []
     for quest in quests:
         if quest.participation_type == "group":
-            total_count = (
-                QuestProgress.objects.filter(quest=quest)
-                .aggregate(total=models.Sum("current_count"))
-                .get("total")
-                or 0
-            )
+            total_count = total_counts.get(quest.id, 0) or 0
             user_progress = progress_map.get(quest.id)
             participated = bool(user_progress and user_progress.current_count > 0)
-            reward_received = QuestCompletion.objects.filter(
-                quest=quest, user=user
-            ).exists()
+            reward_received = quest.id in completed_quest_ids
             progress_percentage = (
                 min(100, (total_count / quest.target_count) * 100)
                 if quest.target_count > 0

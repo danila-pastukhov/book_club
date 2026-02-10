@@ -6,6 +6,7 @@ Handles reading group CRUD operations, membership management, and group book lis
 
 import logging
 
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -32,7 +33,12 @@ logger = logging.getLogger(__name__)
 
 @api_view(["GET"])
 def get_reading_group(request, slug):
-    reading_group = get_object_or_404(ReadingGroup, slug=slug)
+    reading_group = get_object_or_404(
+        ReadingGroup.objects.select_related("creator").prefetch_related(
+            "user", "user__usertoreadinggroupstate_set"
+        ),
+        slug=slug,
+    )
     serializer = ReadingGroupSerializer(reading_group)
     return Response(serializer.data)
 
@@ -60,7 +66,7 @@ def get_group_reading_books(request, slug):
     # Optimize: select_related for author and reading_group
     books = Book.objects.filter(id__in=book_ids).select_related(
         "author", "reading_group"
-    )
+    ).annotate(average_rating=Avg("bookreview__stars_amount"))
     serializer = BookSerializerInfo(books, many=True)
     return Response(serializer.data)
 
@@ -84,7 +90,7 @@ def get_group_posted_books(request, slug):
         visibility="group",
         reading_group=reading_group,
         author=reading_group.creator,
-    )
+    ).annotate(average_rating=Avg("bookreview__stars_amount"))
     serializer = BookSerializerInfo(books, many=True)
     return Response(serializer.data)
 
@@ -139,13 +145,14 @@ def get_user_reading_groups(request):
     """
     user = request.user
 
-    # Get all UserToReadingGroupState entries where user is confirmed member
-    user_groups = UserToReadingGroupState.objects.filter(
+    # Get reading groups where user is confirmed member, with prefetch for serializer
+    group_ids = UserToReadingGroupState.objects.filter(
         user=user, in_reading_group=True
-    ).select_related("reading_group")
+    ).values_list("reading_group_id", flat=True)
 
-    # Extract the reading groups
-    reading_groups = [ug.reading_group for ug in user_groups]
+    reading_groups = ReadingGroup.objects.filter(id__in=group_ids).select_related(
+        "creator"
+    ).prefetch_related("user", "user__usertoreadinggroupstate_set")
 
     serializer = ReadingGroupSerializer(reading_groups, many=True)
     return Response(serializer.data)
@@ -155,7 +162,9 @@ def get_user_reading_groups(request):
 @permission_classes([IsAuthenticated])
 def get_user_created_groups(request):
     user = request.user
-    reading_groups = ReadingGroup.objects.filter(creator=user)
+    reading_groups = ReadingGroup.objects.filter(creator=user).select_related(
+        "creator"
+    ).prefetch_related("user", "user__usertoreadinggroupstate_set")
     serializer = ReadingGroupSerializer(reading_groups, many=True)
     return Response(serializer.data)
 
