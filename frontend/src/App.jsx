@@ -1,30 +1,33 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import AppLayout from './ui_components/AppLayout'
-import HomePage from './pages/HomePage'
-import DetailPage from './pages/DetailPage'
-import ReadingGroupPage from './pages/ReadingGroupPage'
-import SignupPage from './pages/SignupPage'
-import CreateBookPage from './pages/CreateBookPage'
-import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './ui_components/ProtectedRoute'
-import ProfilePage from './pages/ProfilePage'
-import BookPagesPage from './pages/BookPagesPage'
-import AllReadingGroupsPage from './pages/AllReadingGroupsPage'
-import AllBooksPage from './pages/AllBooksPage'
-import CreateReadingGroupPage from './pages/CreateReadingGroupPage'
-import NotificationsPage from './pages/NotificationsPage'
-import QuestsPage from './pages/QuestsPage'
-import GroupQuestsPage from './pages/GroupQuestsPage'
-import CreateQuestPage from './pages/CreateQuestPage'
-import PrizeBoardPage from './pages/PrizeBoardPage'
-import UserPrizeBoardPage from './pages/UserPrizeBoardPage'
-import RewardsPage from './pages/RewardsPage'
-import NotFoundPage from './pages/NotFoundPage'
+
+const HomePage = lazy(() => import('./pages/HomePage'))
+const DetailPage = lazy(() => import('./pages/DetailPage'))
+const ReadingGroupPage = lazy(() => import('./pages/ReadingGroupPage'))
+const SignupPage = lazy(() => import('./pages/SignupPage'))
+const CreateBookPage = lazy(() => import('./pages/CreateBookPage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const BookPagesPage = lazy(() => import('./pages/BookPagesPage'))
+const AllReadingGroupsPage = lazy(() => import('./pages/AllReadingGroupsPage'))
+const AllBooksPage = lazy(() => import('./pages/AllBooksPage'))
+const CreateReadingGroupPage = lazy(() => import('./pages/CreateReadingGroupPage'))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+const QuestsPage = lazy(() => import('./pages/QuestsPage'))
+const GroupQuestsPage = lazy(() => import('./pages/GroupQuestsPage'))
+const CreateQuestPage = lazy(() => import('./pages/CreateQuestPage'))
+const PrizeBoardPage = lazy(() => import('./pages/PrizeBoardPage'))
+const UserPrizeBoardPage = lazy(() => import('./pages/UserPrizeBoardPage'))
+const RewardsPage = lazy(() => import('./pages/RewardsPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 const App = () => {
 
   return (
     <BrowserRouter>
+      <Suspense fallback={<div className="flex items-center justify-center h-screen">Загрузка...</div>}>
       <Routes>
         <Route
           path="/"
@@ -132,6 +135,7 @@ const App = () => {
         </Route>
         <Route path="/books/:slug/page" element={<BookPagesPage />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
