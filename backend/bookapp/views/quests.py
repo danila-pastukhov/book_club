@@ -278,16 +278,11 @@ def generate_daily_quests(request, slug):
             )
         )
 
-        # Fallback to hardcoded templates if DB is empty
         if not db_templates:
-            db_templates = [
-                {"title": "Читательский марафон", "description": "Прочитайте книгу сегодня", "quest_type": "read_books", "target_count": 1},
-                {"title": "Активный читатель", "description": "Оставьте комментарии к книгам", "quest_type": "create_comments", "target_count": 3},
-                {"title": "Обсуждение", "description": "Ответьте на комментарии других читателей", "quest_type": "reply_comments", "target_count": 2},
-                {"title": "Щедрость", "description": "Разместите призы на доске", "quest_type": "place_rewards", "target_count": 1},
-                {"title": "Книжный червь", "description": "Прочитайте несколько книг", "quest_type": "read_books", "target_count": 2},
-                {"title": "Комментатор", "description": "Оставьте много комментариев", "quest_type": "create_comments", "target_count": 5},
-            ]
+            return Response(
+               {"error": "Нет доступных групповых заданий для генерации."},
+            status=status.HTTP_404_NOT_FOUND,
+        )        
 
         # Select up to 3 random quests
         sample_size = min(3, len(db_templates))
@@ -374,17 +369,13 @@ def generate_daily_personal_quests(request):
             "title", "description", "quest_type", "target_count"
         )
     )
-
-    # Fallback to hardcoded templates if DB is empty
+    
     if not db_templates:
-        db_templates = [
-            {"title": "Читательский марафон", "description": "Прочитайте книгу сегодня", "quest_type": "read_books", "target_count": 1},
-            {"title": "Активный читатель", "description": "Оставьте комментарии к книгам", "quest_type": "create_comments", "target_count": 3},
-            {"title": "Обсуждение", "description": "Ответьте на комментарии других читателей", "quest_type": "reply_comments", "target_count": 2},
-            {"title": "Щедрость", "description": "Разместите призы на доске", "quest_type": "place_rewards", "target_count": 1},
-            {"title": "Книжный червь", "description": "Прочитайте несколько книг", "quest_type": "read_books", "target_count": 2},
-            {"title": "Комментатор", "description": "Оставьте много комментариев", "quest_type": "create_comments", "target_count": 5},
-        ]
+        return Response(
+            {"error": "Нет доступных личных заданий для генерации."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
 
     # Select up to 3 random quests
     sample_size = min(3, len(db_templates))
